@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Reset password · Bohol House{% endblock %}
+
+{% block content %}
+  <article class="auth-card">
+    <hgroup>
+      <h2>Reset your password</h2>
+      <p>Use one of the recovery codes you saved when you made your profile.</p>
+    </hgroup>
+
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <label>Username
+        <input name="username" autocomplete="username" autocapitalize="none"
+               value="{{ request.form.get('username', '') }}" required>
+      </label>
+
+      <label>Recovery code
+        <input name="code" autocomplete="one-time-code" autocapitalize="none"
+               placeholder="a1b2c3-d4e5f6" required>
+      </label>
+
+      <label>New password
+        <input type="password" name="password" autocomplete="new-password" minlength="8" required>
+      </label>
+
+      <label>Confirm new password
+        <input type="password" name="confirm" autocomplete="new-password" minlength="8" required>
+      </label>
+
+      <button type="submit">Reset password</button>
+    </form>
+
+    <footer class="auth-links">
+      <a href="{{ url_for('auth.login') }}">Back to sign in</a>
+    </footer>
+    <small class="hint">Lost your codes too? Ask whoever runs the house server to reset it for you.</small>
+  </article>
+{% endblock %}

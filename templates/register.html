@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Create a profile · Bohol House{% endblock %}
+
+{% block content %}
+  <article class="auth-card">
+    <hgroup>
+      <h2>Create a profile</h2>
+      <p>You'll need the house invite code.</p>
+    </hgroup>
+
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <label>House invite code
+        <input name="invite_code" autocomplete="off" required>
+      </label>
+
+      <label>Username
+        <input name="username" autocomplete="username" autocapitalize="none"
+               pattern="[A-Za-z0-9_]{3,30}" value="{{ request.form.get('username', '') }}" required>
+      </label>
+      <small class="hint">3 to 30 letters, numbers or underscores. You'll sign in with this.</small>
+
+      <label>Display name
+        <input name="display_name" maxlength="50" value="{{ request.form.get('display_name', '') }}"
+               placeholder="e.g. Justine">
+      </label>
+
+      <label>Password
+        <input type="password" name="password" autocomplete="new-password" minlength="8" required>
+      </label>
+
+      <label>Confirm password
+        <input type="password" name="confirm" autocomplete="new-password" minlength="8" required>
+      </label>
+
+      <button type="submit">Create profile</button>
+    </form>
+
+    <footer class="auth-links">
+      <a href="{{ url_for('auth.login') }}">Already have a profile? Sign in</a>
+    </footer>
+  </article>
+{% endblock %}

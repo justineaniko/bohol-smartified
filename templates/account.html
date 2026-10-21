@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Account · Bohol House{% endblock %}
+
+{% block content %}
+  <hgroup class="top">
+    <h1>{{ g.user.display_name }}</h1>
+    <p>Signed in as @{{ g.user.username }}</p>
+  </hgroup>
+
+  <article class="account-section">
+    <h3>Change password</h3>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="change_password">
+      <label>Current password
+        <input type="password" name="current_password" autocomplete="current-password" required>
+      </label>
+      <label>New password
+        <input type="password" name="new_password" autocomplete="new-password" minlength="8" required>
+      </label>
+      <label>Confirm new password
+        <input type="password" name="confirm" autocomplete="new-password" minlength="8" required>
+      </label>
+      <button type="submit">Change password</button>
+    </form>
+    <small class="hint">This signs you out on your other devices.</small>
+  </article>
+
+  <article class="account-section">
+    <h3>Recovery codes</h3>
+    <p>You have <strong>{{ codes_left }}</strong> unused recovery code{{ '' if codes_left == 1 else 's' }}.</p>
+    {% if codes_left <= 2 %}
+      <p class="flash flash-error">You're running low. Make new ones and save them.</p>
+    {% endif %}
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="new_codes">
+      <label>Current password
+        <input type="password" name="current_password" autocomplete="current-password" required>
+      </label>
+      <button type="submit" class="outline">Make new recovery codes</button>
+    </form>
+    <small class="hint">Your old codes stop working once you make new ones.</small>
+  </article>
+{% endblock %}

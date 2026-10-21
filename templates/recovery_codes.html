@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Recovery codes · Bohol House{% endblock %}
+
+{% block content %}
+  {% set codes_text = "Bohol House recovery codes for " ~ g.user.username ~ "\nEach code works once.\n\n" ~ codes|join("\n") %}
+  <article class="auth-card">
+    <hgroup>
+      <h2>{% if first_time %}Save your recovery codes{% else %}Your new recovery codes{% endif %}</h2>
+      <p>If you forget your password, one of these resets it. Each code works once.</p>
+    </hgroup>
+
+    <ul class="codes" id="codes">
+      {% for code in codes %}<li>{{ code }}</li>{% endfor %}
+    </ul>
+
+    <p>
+      <strong>This is the only time they're shown.</strong>
+      Save them somewhere safe, like a password manager or your notes app.
+      {% if not first_time %}Your old codes no longer work.{% endif %}
+    </p>
+
+    <div class="code-actions">
+      <button type="button" class="outline" id="copy-codes" data-codes="{{ codes_text }}">Copy</button>
+      {# Built on the server; no JavaScript needed to download #}
+      <a role="button" class="outline" download="bohol-house-recovery-codes.txt"
+         href="data:text/plain;charset=utf-8,{{ codes_text|urlencode }}">Download .txt</a>
+    </div>
+
+    <hr>
+    <a href="{{ url_for('dashboard') }}" role="button">I've saved them, continue</a>
+  </article>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('copy-codes').addEventListener('click', async (event) => {
+    try {
+      await navigator.clipboard.writeText(event.target.dataset.codes);
+      event.target.textContent = 'Copied ✓';
+    } catch (e) {
+      // Clipboard needs https; on plain http, select the codes by hand instead
+      event.target.textContent = "Couldn't copy: select them by hand";
+    }
+  });
+</script>
+{% endblock %}

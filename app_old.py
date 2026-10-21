@@ -1,0 +1,6 @@
+import qrcode
+import os
+
+
+
+

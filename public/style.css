@@ -1,0 +1,154 @@
+/* ---------- Dark: lavender + teal on a night-sky background ---------- */
+:root[data-theme="dark"] {
+  --pico-background-color: #13111c;
+  --pico-card-background-color: #1d1a2b;
+  --pico-primary: #b9a7ff;            /* lavender */
+  --pico-primary-background: #b9a7ff;
+  --pico-primary-hover-background: #cdbfff;
+  --pico-primary-inverse: #13111c;
+  --teal: #6fd6c9;
+  --pink: #f4a9c4;
+  --teal-soft: rgba(111, 214, 201, 0.15);
+  --pink-soft: rgba(244, 169, 196, 0.15);
+}
+
+/* ---------- Light: soft lilac paper, deeper accents for contrast ---------- */
+:root[data-theme="light"] {
+  --pico-background-color: #f7f4ff;
+  --pico-card-background-color: #ffffff;
+  --pico-primary: #6d55d9;            /* deeper lavender so text stays readable */
+  --pico-primary-background: #6d55d9;
+  --pico-primary-hover-background: #5a43c4;
+  --pico-primary-inverse: #ffffff;
+  --teal: #13877a;
+  --pink: #c23d72;
+  --teal-soft: rgba(19, 135, 122, 0.12);
+  --pink-soft: rgba(194, 61, 114, 0.12);
+}
+
+:root { --pico-border-radius: 14px; }
+
+/* Smooth switch between themes */
+body, article, .badge, .qty {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;          /* buttons drop below the title on narrow phones */
+  gap: 1rem;
+  margin-block: 1.5rem;
+}
+.top hgroup { margin: 0; }
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.actions button, .actions [role="button"] { margin: 0; }
+
+.alert {
+  border-left: 4px solid var(--pink);
+}
+
+/* Responsive card grid: 1 column on phones, more on iPad/laptop */
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.card { margin: 0; }
+.card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card.low { outline: 1px solid var(--pink); }
+
+.qty {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0.5rem 0 0;
+  color: var(--teal);
+}
+.card.low .qty { color: var(--pink); }
+
+.card footer {
+  display: flex;
+  gap: 0.5rem;
+}
+.card footer form { flex: 1; margin: 0; }
+.card footer button { width: 100%; margin: 0; }
+
+.badge {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+}
+.badge-ok  { background: var(--teal-soft); color: var(--teal); }
+.badge-low { background: var(--pink-soft); color: var(--pink); }
+
+/* ---------- Navigation ---------- */
+.brand {
+  font-weight: 700;
+  color: var(--pico-primary);
+  text-decoration: none;
+}
+nav form { margin: 0; }
+nav button { margin: 0; padding: 0.35rem 0.8rem; }
+
+/* ---------- Messages ---------- */
+.flash {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--teal);
+}
+.flash-error { border-left-color: var(--pink); }
+
+/* ---------- Sign-in pages ---------- */
+.auth-card {
+  max-width: 420px;
+  margin: 2rem auto;
+}
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+.hint {
+  display: block;
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+  color: var(--pico-muted-color);
+}
+
+/* ---------- Recovery codes ---------- */
+.codes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  padding: 0;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 1.05rem;
+}
+.codes li {
+  list-style: none;
+  padding: 0.5rem;
+  text-align: center;
+  border-radius: 8px;
+  background: var(--teal-soft);
+}
+.code-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.code-actions button, .code-actions [role="button"] { margin: 0; width: auto; }
+
+.account-section { margin-bottom: 1.5rem; }
