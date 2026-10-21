@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ recipe.title }} · Bohol House{% endblock %}
+
+{% block content %}
+  <a href="{{ url_for('recipes.index') }}" class="back-link">← Recipes</a>
+
+  <header class="recipe-head">
+    <h1>{{ recipe.title }}</h1>
+    <div class="meta">
+      <span class="chip chip-accent">{{ meal_types.get(recipe.meal_type, recipe.meal_type) }}</span>
+      {% if recipe.prep_minutes %}<span class="chip">⏱ {{ recipe.prep_minutes }} min</span>{% endif %}
+      {% if recipe.servings %}<span class="chip">Serves {{ recipe.servings }}</span>{% endif %}
+      {% if recipe.cuisine %}<span class="chip">{{ recipe.cuisine }}</span>{% endif %}
+    </div>
+    {% if recipe.tags %}
+      <div class="tag-line">
+        {% for t in recipe.tags.split(',') %}<a href="{{ url_for('recipes.index', tag=t.strip()) }}">#{{ t.strip() }}</a>{% endfor %}
+      </div>
+    {% endif %}
+    {% if recipe.created_by_name %}<small class="muted">Added by {{ recipe.created_by_name }}</small>{% endif %}
+  </header>
+
+  <div class="recipe-body">
+    <article>
+      <h3>Ingredients</h3>
+      {# Tick boxes are just for cooking along; nothing is saved #}
+      <ul class="checklist">
+        {% for line in recipe.ingredients.splitlines() if line.strip() %}
+          <li><label><input type="checkbox"> {{ line.strip() }}</label></li>
+        {% endfor %}
+      </ul>
+    </article>
+
+    <article>
+      <h3>Steps</h3>
+      <ol class="steps">
+        {% for line in recipe.steps.splitlines() if line.strip() %}<li>{{ line.strip() }}</li>{% endfor %}
+      </ol>
+    </article>
+  </div>
+
+  <div class="page-actions">
+    <a href="{{ url_for('recipes.edit', recipe_id=recipe.id) }}" role="button" class="outline">Edit</a>
+  </div>
+  {{ m.delete_form(url_for('recipes.delete', recipe_id=recipe.id), recipe.title) }}
+{% endblock %}

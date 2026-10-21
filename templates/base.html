@@ -19,14 +19,14 @@
   </script>
 </head>
 <body>
-  <nav class="container">
+  <nav class="container top-nav">
     <ul>
-      <li><a href="{{ url_for('dashboard') if g.user else url_for('auth.login') }}" class="brand">Bohol House</a></li>
+      <li><a href="{{ url_for('inventory.dashboard') if g.user else url_for('auth.login') }}" class="brand">Bohol House</a></li>
     </ul>
     <ul>
-      <li><button id="theme-toggle" class="outline secondary" aria-label="Toggle light/dark mode">☀️</button></li>
+      <li><button id="theme-toggle" class="outline secondary icon-btn" aria-label="Toggle light/dark mode">☀️</button></li>
       {% if g.user %}
-        <li><a href="{{ url_for('auth.account') }}">{{ g.user.display_name }}</a></li>
+        <li><a href="{{ url_for('auth.account') }}" class="who">{{ g.user.display_name }}</a></li>
         <li>
           {# Sign out is a POST form, so a link on another site can't sign you out #}
           <form method="post" action="{{ url_for('auth.logout') }}">
@@ -37,6 +37,24 @@
       {% endif %}
     </ul>
   </nav>
+
+  {% if g.user %}
+    {# Section tabs. Plain links: the server decides what each page shows. #}
+    {% set section = (request.endpoint or '').split('.')[0] %}
+    <div class="container">
+      <div class="section-tabs" role="navigation" aria-label="Sections">
+        <a href="{{ url_for('inventory.dashboard') }}" {% if section == 'inventory' %}aria-current="page"{% endif %}>Supplies</a>
+        <a href="{{ url_for('browse.index') }}" {% if section == 'browse' %}aria-current="page"{% endif %}>Browse</a>
+        <a href="{{ url_for('recipes.index') }}" {% if section == 'recipes' %}aria-current="page"{% endif %}>Recipes</a>
+        {% if has_feature('books') %}
+          <a href="{{ url_for('books.index') }}" {% if section == 'books' %}aria-current="page"{% endif %}>Books</a>
+        {% endif %}
+        {% if g.user.is_admin %}
+          <a href="{{ url_for('auth.admin_access') }}" {% if request.endpoint == 'auth.admin_access' %}aria-current="page"{% endif %}>Access</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
 
   <main class="container">
     {% with messages = get_flashed_messages(with_categories=true) %}

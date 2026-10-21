@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ 'Add recipe' if mode == 'add' else 'Edit ' ~ recipe.title }} · Bohol House{% endblock %}
+
+{% block content %}
+  <a href="{{ url_for('recipes.detail', recipe_id=recipe.id) if mode == 'edit' else url_for('recipes.index') }}" class="back-link">← Back</a>
+  <h1>{{ 'Add a recipe' if mode == 'add' else 'Edit recipe' }}</h1>
+
+  <form method="post" class="form-card">
+    {{ m.csrf() }}
+
+    <label>Title
+      <input name="title" maxlength="150" value="{{ recipe.title or '' }}" required autofocus placeholder="e.g. Chicken adobo">
+    </label>
+
+    <fieldset>
+      <legend>Meal</legend>
+      <div class="segmented">
+        {% for key, label in meal_types.items() %}
+          <label><input type="radio" name="meal_type" value="{{ key }}" {% if recipe.meal_type == key %}checked{% endif %} required> {{ label }}</label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <div class="grid">
+      <label>Total time (min) <input type="number" name="prep_minutes" min="1" max="2000" value="{{ recipe.prep_minutes or '' }}"></label>
+      <label>Servings <input type="number" name="servings" min="1" max="100" value="{{ recipe.servings or '' }}"></label>
+      <label>Cuisine <input name="cuisine" maxlength="50" value="{{ recipe.cuisine or '' }}" placeholder="Filipino, Hungarian…"></label>
+    </div>
+
+    <label>Tags <span class="muted">(comma separated)</span>
+      <input name="tags" maxlength="255" value="{{ recipe.tags or '' }}" placeholder="quick, vegetarian, budget">
+    </label>
+
+    <label>Ingredients <span class="muted">(one per line)</span>
+      <textarea name="ingredients" rows="8" maxlength="8000" required placeholder="1 kg chicken&#10;1/2 cup soy sauce&#10;1/3 cup vinegar">{{ recipe.ingredients or '' }}</textarea>
+    </label>
+
+    <label>Steps <span class="muted">(one per line)</span>
+      <textarea name="steps" rows="8" maxlength="12000" required placeholder="Marinate the chicken for 30 minutes.&#10;Brown it in a hot pan.">{{ recipe.steps or '' }}</textarea>
+    </label>
+
+    <button type="submit">{{ 'Add recipe' if mode == 'add' else 'Save changes' }}</button>
+  </form>
+{% endblock %}

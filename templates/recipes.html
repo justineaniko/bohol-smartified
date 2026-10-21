@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Recipes · Bohol House{% endblock %}
+
+{% block content %}
+  <header class="top">
+    <hgroup>
+      <h1>Recipes</h1>
+      <p>Shared with the whole house</p>
+    </hgroup>
+    <a href="{{ url_for('recipes.add') }}" role="button">+ Add recipe</a>
+  </header>
+
+  {# Meal tabs keep the other filters #}
+  <div class="tabs" role="tablist" aria-label="Meal">
+    <a role="tab" href="{{ url_for('recipes.index', q=filters.q or None, time=filters.max_minutes, tag=filters.tag, sort=filters.sort) }}"
+       {% if not filters.meal_type %}aria-selected="true" aria-current="page"{% endif %}>All</a>
+    {% for key, label in meal_types.items() %}
+      <a role="tab" href="{{ url_for('recipes.index', meal=key, q=filters.q or None, time=filters.max_minutes, tag=filters.tag, sort=filters.sort) }}"
+         {% if filters.meal_type == key %}aria-selected="true" aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <form method="get" class="filter-bar">
+    {% if filters.meal_type %}<input type="hidden" name="meal" value="{{ filters.meal_type }}">{% endif %}
+    {% if filters.tag %}<input type="hidden" name="tag" value="{{ filters.tag }}">{% endif %}
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search recipes or ingredients…" aria-label="Search recipes">
+    <select name="time" aria-label="Time">
+      <option value="">Any time</option>
+      {% for mins, label in time_limits.items() %}<option value="{{ mins }}" {% if filters.max_minutes == mins %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <select name="sort" aria-label="Sort">
+      {% for key, label in sorts.items() %}<option value="{{ key }}" {% if filters.sort == key %}selected{% endif %}>Sort: {{ label }}</option>{% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+    {% if filters.q or filters.max_minutes or filters.tag or filters.meal_type %}<a href="{{ url_for('recipes.index') }}" class="clear-link">Clear</a>{% endif %}
+  </form>
+
+  {% if tags %}
+    <div class="chip-row" aria-label="Tags">
+      {% for t in tags %}
+        {% if filters.tag == t %}
+          <a class="chip chip-accent" href="{{ url_for('recipes.index', meal=filters.meal_type, q=filters.q or None, time=filters.max_minutes, sort=filters.sort) }}" aria-current="true">#{{ t }} ✕</a>
+        {% else %}
+          <a class="chip" href="{{ url_for('recipes.index', tag=t, meal=filters.meal_type, q=filters.q or None, time=filters.max_minutes, sort=filters.sort) }}">#{{ t }}</a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if recipes %}
+    <div class="grid-cards">{% for r in recipes %}{{ m.recipe_card(r, meal_types) }}{% endfor %}</div>
+  {% elif filters.q or filters.max_minutes or filters.tag or filters.meal_type %}
+    {{ m.empty("No recipes match those filters.", url_for('recipes.index'), "Clear filters") }}
+  {% else %}
+    {{ m.empty("No recipes yet. Add the family favorites first.", url_for('recipes.add'), "+ Add recipe") }}
+  {% endif %}
+{% endblock %}

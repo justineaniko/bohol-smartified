@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ item.name }} · Bohol House{% endblock %}
+
+{% block content %}
+  <a href="{{ url_for('inventory.dashboard') }}" class="back-link">← Supplies</a>
+
+  <article class="item-hero {% if item.is_low %}low{% endif %}">
+    <header class="item-hero-head">
+      <hgroup>
+        <h1>{{ item.name }}</h1>
+        <p>
+          {{ categories.get(item.category, item.category) }}
+          · {% if item.owner_id %}{{ item.owner_name or 'Mine' }} (private){% else %}Shared{% endif %}
+          {% if item.location %}· {{ item.location }}{% endif %}
+        </p>
+      </hgroup>
+      {% if item.is_low %}<span class="badge badge-low">Running low</span>{% else %}<span class="badge badge-ok">Stocked</span>{% endif %}
+    </header>
+
+    <p class="qty qty-big">{{ item.quantity }}</p>
+    <p class="muted center">Alert when {{ item.threshold }} or fewer left</p>
+    {% if item.expiry_date %}<p class="center">{{ m.expiry_badge(item.expiry_date) }}</p>{% endif %}
+
+    {# Big buttons for scanning a QR in the pantry. Both are POST, so opening the QR link never changes stock. #}
+    <div class="big-actions">
+      <form method="post" action="{{ url_for('inventory.use_item', qr_code_id=item.qr_code_id) }}">
+        {{ m.csrf() }}
+        <button type="submit" class="outline">− Use 1</button>
+      </form>
+      <form method="post" action="{{ url_for('inventory.restock_item', qr_code_id=item.qr_code_id) }}">
+        {{ m.csrf() }}
+        <button type="submit">+ Add 1</button>
+      </form>
+    </div>
+
+    <details class="restock-more">
+      <summary>Restock several</summary>
+      <form method="post" action="{{ url_for('inventory.restock_item', qr_code_id=item.qr_code_id) }}" class="inline-form">
+        {{ m.csrf() }}
+        <input type="number" name="amount" min="1" max="999" value="5" aria-label="How many">
+        <button type="submit">Add</button>
+      </form>
+    </details>
+  </article>
+
+  {% if item.category == 'clothes' and (item.size or item.color or item.season) %}
+    <article>
+      <h3>Details</h3>
+      <dl class="details-list">
+        {% if item.size %}<dt>Size</dt><dd>{{ item.size }}</dd>{% endif %}
+        {% if item.color %}<dt>Color</dt><dd>{{ item.color }}</dd>{% endif %}
+        {% if item.season %}<dt>Season</dt><dd>{{ item.season|capitalize }}</dd>{% endif %}
+      </dl>
+    </article>
+  {% endif %}
+
+  {% if item.notes %}
+    <article><h3>Notes</h3><p class="pre-line">{{ item.notes }}</p></article>
+  {% endif %}
+
+  <article>
+    <h3>QR code</h3>
+    <p class="muted">This item's QR should open:</p>
+    <code class="qr-url">{{ url_for('inventory.item_page', qr_code_id=item.qr_code_id, _external=True) }}</code>
+  </article>
+
+  <div class="page-actions">
+    <a href="{{ url_for('inventory.edit_item', qr_code_id=item.qr_code_id) }}" role="button" class="outline">Edit</a>
+  </div>
+  {{ m.delete_form(url_for('inventory.remove_item', qr_code_id=item.qr_code_id), item.name) }}
+{% endblock %}

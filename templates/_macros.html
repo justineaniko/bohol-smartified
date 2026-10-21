@@ -1,0 +1,105 @@
+{# Reusable pieces. Import with: {% import "_macros.html" as m with context %} #}
+
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+
+{# "Expires in 3 days" / "Expired 2 days ago" #}
+{% macro expiry_badge(expiry_date) %}
+  {% if expiry_date %}
+    {% set days = (expiry_date - today).days %}
+    {% if days < 0 %}
+      <span class="badge badge-low">Expired {{ -days }}d ago</span>
+    {% elif days == 0 %}
+      <span class="badge badge-low">Expires today</span>
+    {% elif days <= 3 %}
+      <span class="badge badge-warn">Expires in {{ days }}d</span>
+    {% else %}
+      <span class="badge badge-muted">Exp {{ expiry_date.strftime('%b %-d') }}</span>
+    {% endif %}
+  {% endif %}
+{% endmacro %}
+
+{% macro item_card(item, categories, back="list") %}
+  <article class="card {% if item.is_low %}low{% endif %}">
+    <header>
+      <a href="{{ url_for('inventory.item_page', qr_code_id=item.qr_code_id) }}" class="card-title">{{ item.name }}</a>
+      {% if item.is_low %}<span class="badge badge-low">Low</span>{% else %}<span class="badge badge-ok">OK</span>{% endif %}
+    </header>
+
+    <p class="qty">{{ item.quantity }}</p>
+    <div class="meta">
+      <span class="chip">{{ categories.get(item.category, item.category) }}</span>
+      {% if item.owner_id %}<span class="chip chip-private">{{ item.owner_name or 'Mine' }}</span>{% else %}<span class="chip">Shared</span>{% endif %}
+      {% if item.location %}<span class="chip">{{ item.location }}</span>{% endif %}
+      {% if item.category == 'clothes' and item.size %}<span class="chip">Size {{ item.size }}</span>{% endif %}
+      {{ expiry_badge(item.expiry_date) }}
+    </div>
+    <small class="muted">Alert at {{ item.threshold }}</small>
+
+    <footer>
+      {# POST forms, so viewing a page never changes stock #}
+      <form method="post" action="{{ url_for('inventory.use_item', qr_code_id=item.qr_code_id) }}">
+        {{ csrf() }}<input type="hidden" name="back" value="{{ back }}">
+        <button type="submit" class="outline" aria-label="Use one {{ item.name }}">−1</button>
+      </form>
+      <form method="post" action="{{ url_for('inventory.restock_item', qr_code_id=item.qr_code_id) }}">
+        {{ csrf() }}<input type="hidden" name="back" value="{{ back }}">
+        <button type="submit" aria-label="Add one {{ item.name }}">+1</button>
+      </form>
+    </footer>
+  </article>
+{% endmacro %}
+
+{% macro stars(rating) %}
+  {% if rating %}<span class="stars" aria-label="{{ rating }} out of 5">{{ '★' * rating }}{{ '☆' * (5 - rating) }}</span>{% endif %}
+{% endmacro %}
+
+{% macro book_card(book, statuses) %}
+  <article class="card book-card">
+    <header>
+      <span class="card-title">{{ book.title }}</span>
+      <span class="badge badge-{{ 'ok' if book.status == 'finished' else ('warn' if book.status == 'reading' else 'muted') }}">{{ statuses.get(book.status, book.status) }}</span>
+    </header>
+    {% if book.author %}<p class="muted byline">by {{ book.author }}</p>{% endif %}
+    <div class="meta">
+      {% if book.genre %}<span class="chip">{{ book.genre }}</span>{% endif %}
+      {% if book.pages %}<span class="chip">{{ book.pages }} pages</span>{% endif %}
+      {% if book.finished_on %}<span class="chip">Finished {{ book.finished_on.strftime('%b %Y') }}</span>{% endif %}
+    </div>
+    {{ stars(book.rating) }}
+    <footer><a href="{{ url_for('books.edit', book_id=book.id) }}" role="button" class="outline secondary small-btn">Edit</a></footer>
+  </article>
+{% endmacro %}
+
+{% macro recipe_card(recipe, meal_types) %}
+  <a class="card recipe-card" href="{{ url_for('recipes.detail', recipe_id=recipe.id) }}">
+    <span class="card-title">{{ recipe.title }}</span>
+    <div class="meta">
+      <span class="chip chip-accent">{{ meal_types.get(recipe.meal_type, recipe.meal_type) }}</span>
+      {% if recipe.prep_minutes %}<span class="chip">⏱ {{ recipe.prep_minutes }} min</span>{% endif %}
+      {% if recipe.servings %}<span class="chip">Serves {{ recipe.servings }}</span>{% endif %}
+      {% if recipe.cuisine %}<span class="chip">{{ recipe.cuisine }}</span>{% endif %}
+    </div>
+    {% if recipe.tags %}
+      <div class="tag-line">{% for t in recipe.tags.split(',') %}<span>#{{ t.strip() }}</span>{% endfor %}</div>
+    {% endif %}
+  </a>
+{% endmacro %}
+
+{# Delete button that needs a second click, without JavaScript popups #}
+{% macro delete_form(action, label) %}
+  <details class="danger-zone">
+    <summary>Delete {{ label }}</summary>
+    <form method="post" action="{{ action }}">
+      {{ csrf() }}
+      <p>This can't be undone.</p>
+      <button type="submit" class="danger">Yes, delete {{ label }}</button>
+    </form>
+  </details>
+{% endmacro %}
+
+{% macro empty(message, link=None, link_label=None) %}
+  <div class="empty">
+    <p>{{ message }}</p>
+    {% if link %}<a href="{{ link }}" role="button" class="outline">{{ link_label }}</a>{% endif %}
+  </div>
+{% endmacro %}

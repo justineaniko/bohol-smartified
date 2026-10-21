@@ -1,69 +1,58 @@
 {% extends "base.html" %}
+{% import "_macros.html" as m with context %}
 {% block title %}Supplies · Bohol House{% endblock %}
 
 {% block content %}
   <header class="top">
     <hgroup>
       <h1>Supplies</h1>
-      <p>{{ items|length }} items tracked</p>
+      <p>{{ items|length }} item{{ '' if items|length == 1 else 's' }}{% if filters.q or filters.category or filters.low_only or filters.owner != 'all' %} matching{% endif %}</p>
     </hgroup>
-    <a href="{{ url_for('add_item') }}" role="button">+ Add item</a>
+    <a href="{{ url_for('inventory.add_item') }}" role="button">+ Add item</a>
   </header>
 
-  {# Count low-stock items so we can show a summary banner #}
   {% set low = items | selectattr('is_low') | list %}
-  {% if low %}
+  {% if low and not filters.low_only %}
     <article class="alert">
       <strong>{{ low|length }} running low:</strong>
       {{ low | map(attribute='name') | join(', ') }}
+      · <a href="{{ url_for('inventory.dashboard', low='1') }}">Show only these</a>
     </article>
   {% endif %}
 
-  <input type="search" id="search" placeholder="Search items…" aria-label="Search items">
+  {# Filters are a GET form: the server filters, and the URL can be bookmarked #}
+  <form method="get" class="filter-bar">
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search supplies…" aria-label="Search">
+    <select name="category" aria-label="Category">
+      <option value="">All categories</option>
+      {% for key, label in categories.items() %}
+        <option value="{{ key }}" {% if filters.category == key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="owner" aria-label="Whose">
+      <option value="all" {% if filters.owner == 'all' %}selected{% endif %}>Shared + mine</option>
+      <option value="shared" {% if filters.owner == 'shared' %}selected{% endif %}>Shared only</option>
+      <option value="mine" {% if filters.owner == 'mine' %}selected{% endif %}>Mine only</option>
+    </select>
+    <select name="sort" aria-label="Sort">
+      {% for key, label in sorts.items() %}
+        <option value="{{ key }}" {% if filters.sort == key %}selected{% endif %}>Sort: {{ label }}</option>
+      {% endfor %}
+    </select>
+    <label class="inline-check"><input type="checkbox" name="low" value="1" {% if filters.low_only %}checked{% endif %}> Low only</label>
+    <button type="submit">Filter</button>
+    {% if filters.q or filters.category or filters.low_only or filters.owner != 'all' or filters.sort != 'name' %}
+      <a href="{{ url_for('inventory.dashboard') }}" class="clear-link">Clear</a>
+    {% endif %}
+  </form>
 
-  <div class="grid-cards" id="item-list">
-    {% for item in items %}
-      <article class="card {% if item.is_low %}low{% endif %}" data-name="{{ item.name|lower }}">
-        <header>
-          <a href="{{ url_for('item_page', qr_code_id=item.qr_code_id) }}">{{ item.name }}</a>
-          {% if item.is_low %}
-            <span class="badge badge-low">Low</span>
-          {% else %}
-            <span class="badge badge-ok">OK</span>
-          {% endif %}
-        </header>
-
-        <p class="qty">{{ item.quantity }}</p>
-        <small>Alert at {{ item.threshold }}</small>
-
-        <footer>
-          {# POST forms, so viewing the page never changes stock #}
-          <form method="post" action="{{ url_for('use_item', qr_code_id=item.qr_code_id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="outline">−1</button>
-          </form>
-          <form method="post" action="{{ url_for('restock_item', qr_code_id=item.qr_code_id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="amount" value="1">
-            <button type="submit">+1</button>
-          </form>
-        </footer>
-      </article>
-    {% else %}
-      <p>No items yet. Add one to get started.</p>
-    {% endfor %}
-  </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-  // Live search: hides cards whose name doesn't match what you type
-  const search = document.getElementById('search');
-  search.addEventListener('input', () => {
-    const q = search.value.toLowerCase();
-    document.querySelectorAll('#item-list .card').forEach(card => {
-      card.hidden = !card.dataset.name.includes(q);
-    });
-  });
-</script>
+  {% if items %}
+    <div class="grid-cards">
+      {% for item in items %}{{ m.item_card(item, categories) }}{% endfor %}
+    </div>
+  {% elif filters.q or filters.category or filters.low_only or filters.owner != 'all' %}
+    {{ m.empty("Nothing matches those filters.", url_for('inventory.dashboard'), "Clear filters") }}
+  {% else %}
+    {{ m.empty("No supplies yet. Add the first one, then print its QR code.", url_for('inventory.add_item'), "+ Add item") }}
+  {% endif %}
 {% endblock %}

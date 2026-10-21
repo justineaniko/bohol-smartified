@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Browse · Bohol House{% endblock %}
+
+{% block content %}
+  <header class="top">
+    <hgroup>
+      <h1>Browse</h1>
+      <p>Everything in the house, one tab at a time</p>
+    </hgroup>
+  </header>
+
+  {# Tabs are plain links (?tab=...). The server decides what each tab shows and who may see it. #}
+  <div class="tabs" role="tablist" aria-label="What to browse">
+    {% for key, label in tabs.items() %}
+      <a role="tab" href="{{ url_for('browse.index', tab=key, q=q or None) }}"
+         {% if tab == key %}aria-selected="true" aria-current="page"{% else %}aria-selected="false"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  {# ---------- Filters for the current tab ---------- #}
+  <form method="get" class="filter-bar">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <input type="search" name="q" value="{{ q }}" placeholder="Search {{ tabs[tab]|lower if tab != 'all' else 'everything' }}…" aria-label="Search">
+
+    {% if tab in ('products', 'food', 'clothes', 'other') %}
+      <select name="owner" aria-label="Whose">
+        <option value="all" {% if filters.owner == 'all' %}selected{% endif %}>Shared + mine</option>
+        <option value="shared" {% if filters.owner == 'shared' %}selected{% endif %}>Shared only</option>
+        <option value="mine" {% if filters.owner == 'mine' %}selected{% endif %}>Mine only</option>
+      </select>
+      {% if tab == 'clothes' %}
+        <select name="season" aria-label="Season">
+          <option value="">Any season</option>
+          {% for s in seasons %}<option value="{{ s }}" {% if season == s %}selected{% endif %}>{{ s|capitalize }}</option>{% endfor %}
+        </select>
+      {% endif %}
+      <select name="sort" aria-label="Sort">
+        {% for key, label in sorts.items() %}<option value="{{ key }}" {% if filters.sort == key %}selected{% endif %}>Sort: {{ label }}</option>{% endfor %}
+      </select>
+      <label class="inline-check"><input type="checkbox" name="low" value="1" {% if filters.low_only %}checked{% endif %}> Low only</label>
+
+    {% elif tab == 'books' %}
+      <select name="status" aria-label="Status">
+        <option value="">Any status</option>
+        {% for key, label in statuses.items() %}<option value="{{ key }}" {% if status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+
+    {% elif tab == 'recipes' %}
+      <select name="meal" aria-label="Meal">
+        <option value="">Any meal</option>
+        {% for key, label in meal_types.items() %}<option value="{{ key }}" {% if filters.meal_type == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <select name="time" aria-label="Time">
+        <option value="">Any time</option>
+        {% for mins, label in time_limits.items() %}<option value="{{ mins }}" {% if filters.max_minutes == mins %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      {% if tags %}
+        <select name="tag" aria-label="Tag">
+          <option value="">Any tag</option>
+          {% for t in tags %}<option value="{{ t }}" {% if filters.tag == t %}selected{% endif %}>#{{ t }}</option>{% endfor %}
+        </select>
+      {% endif %}
+    {% endif %}
+
+    <button type="submit">{{ 'Search' if tab == 'all' else 'Filter' }}</button>
+    {% if request.args|length > 1 %}<a href="{{ url_for('browse.index', tab=tab) }}" class="clear-link">Clear</a>{% endif %}
+  </form>
+
+  {# ---------- Results ---------- #}
+  {% if tab == 'all' %}
+    {% for key, label, kind, results in sections %}
+      <section class="browse-section">
+        <header class="section-head">
+          <h2>{{ label }} <span class="count">{{ results|length }}</span></h2>
+          {% if results|length > 4 %}<a href="{{ url_for('browse.index', tab=key, q=q or None) }}">See all →</a>{% endif %}
+        </header>
+        {% if results %}
+          <div class="grid-cards">
+            {% for r in results[:4] %}
+              {% if kind == 'items' %}{{ m.item_card(r, {key: label}) }}
+              {% elif kind == 'books' %}{{ m.book_card(r, {'reading': 'Reading', 'to_read': 'To read', 'finished': 'Finished'}) }}
+              {% else %}{{ m.recipe_card(r, {}) }}{% endif %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="muted">{{ 'No matches.' if q else 'Nothing here yet.' }}</p>
+        {% endif %}
+      </section>
+    {% endfor %}
+
+  {% elif tab in ('products', 'food', 'clothes', 'other') %}
+    {% if items %}
+      <div class="grid-cards">{% for item in items %}{{ m.item_card(item, {tab: tabs[tab]}) }}{% endfor %}</div>
+    {% else %}
+      {{ m.empty("Nothing in " ~ tabs[tab]|lower ~ (" matches." if request.args|length > 1 else " yet."),
+                 url_for('inventory.add_item', category=tab), "+ Add to " ~ tabs[tab]) }}
+    {% endif %}
+
+  {% elif tab == 'books' %}
+    {% if books %}
+      <div class="grid-cards">{% for b in books %}{{ m.book_card(b, statuses) }}{% endfor %}</div>
+    {% else %}
+      {{ m.empty("No books found.", url_for('books.add'), "+ Add a book") }}
+    {% endif %}
+
+  {% elif tab == 'recipes' %}
+    {% if recipes %}
+      <div class="grid-cards">{% for r in recipes %}{{ m.recipe_card(r, meal_types) }}{% endfor %}</div>
+    {% else %}
+      {{ m.empty("No recipes found.", url_for('recipes.add'), "+ Add a recipe") }}
+    {% endif %}
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}My books · Bohol House{% endblock %}
+
+{% block content %}
+  <header class="top">
+    <hgroup>
+      <h1>My books</h1>
+      <p>Only you can see these</p>
+    </hgroup>
+    <a href="{{ url_for('books.add', status=status) }}" role="button">+ Add book</a>
+  </header>
+
+  <div class="stat-row">
+    {% for key, label in statuses.items() %}
+      <div class="stat"><span class="stat-num">{{ counts.get(key, 0) }}</span><span class="stat-label">{{ label }}</span></div>
+    {% endfor %}
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Reading status">
+    <a role="tab" href="{{ url_for('books.index', q=q or None, sort=sort) }}" {% if not status %}aria-selected="true" aria-current="page"{% endif %}>All</a>
+    {% for key, label in statuses.items() %}
+      <a role="tab" href="{{ url_for('books.index', status=key, q=q or None, sort=sort) }}"
+         {% if status == key %}aria-selected="true" aria-current="page"{% endif %}>{{ label }} <span class="count">{{ counts.get(key, 0) }}</span></a>
+    {% endfor %}
+  </div>
+
+  <form method="get" class="filter-bar">
+    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    <input type="search" name="q" value="{{ q }}" placeholder="Search title or author…" aria-label="Search books">
+    <select name="sort" aria-label="Sort">
+      {% for key, label in sorts.items() %}<option value="{{ key }}" {% if sort == key %}selected{% endif %}>Sort: {{ label }}</option>{% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+    {% if q %}<a href="{{ url_for('books.index', status=status) }}" class="clear-link">Clear</a>{% endif %}
+  </form>
+
+  {% if books %}
+    <div class="grid-cards">{% for b in books %}{{ m.book_card(b, statuses) }}{% endfor %}</div>
+  {% elif q %}
+    {{ m.empty("No books match “" ~ q ~ "”.", url_for('books.index', status=status), "Clear search") }}
+  {% else %}
+    {{ m.empty("No books here yet.", url_for('books.add', status=status), "+ Add a book") }}
+  {% endif %}
+{% endblock %}

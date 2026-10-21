@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Access · Bohol House{% endblock %}
+
+{% block content %}
+  <header class="top">
+    <hgroup>
+      <h1>Access</h1>
+      <p>Choose which profiles get which features</p>
+    </hgroup>
+  </header>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Profile</th>
+          {% for key, label in FEATURES.items() %}<th scope="col">{{ label }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+          <tr>
+            <th scope="row">
+              {{ u.display_name }} <span class="muted">@{{ u.username }}</span>
+              {% if u.is_admin %}<span class="badge badge-ok">Admin</span>{% endif %}
+            </th>
+            {% for key, label in FEATURES.items() %}
+              {% set on = (u.id, key) in enabled %}
+              <td>
+                <form method="post" class="toggle-form">
+                  {{ m.csrf() }}
+                  <input type="hidden" name="user_id" value="{{ u.id }}">
+                  <input type="hidden" name="feature" value="{{ key }}">
+                  <input type="hidden" name="enabled" value="{{ '0' if on else '1' }}">
+                  <button type="submit" class="{{ 'on' if on else 'outline secondary' }} small-btn"
+                          aria-label="{{ 'Turn off' if on else 'Turn on' }} {{ label }} for {{ u.display_name }}">
+                    {{ 'On' if on else 'Off' }}
+                  </button>
+                </form>
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <small class="hint">Turning a feature off hides it immediately. Their data stays saved.</small>
+{% endblock %}

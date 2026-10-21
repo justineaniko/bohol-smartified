@@ -57,7 +57,7 @@ def load_logged_in_user():
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, username, display_name, session_version FROM users WHERE id = %s",
+                "SELECT id, username, display_name, session_version, is_admin FROM users WHERE id = %s",
                 (user_id,),
             )
             user = cur.fetchone()
@@ -125,7 +125,7 @@ def _safe_next(target):
     """Only allow redirects to pages on this site (stops redirects to other websites)."""
     if target and target.startswith("/") and not target.startswith("//") and "\\" not in target:
         return target
-    return url_for("dashboard")
+    return url_for("inventory.dashboard")
 
 
 def _start_session(user, remember):
@@ -200,7 +200,7 @@ def _codes_left(cur, user_id):
 @bp.route("/register", methods=["GET", "POST"])
 def register():
     if g.user:
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("inventory.dashboard"))
     if request.method == "POST":
         invite_code = current_app.config["HOUSE_INVITE_CODE"]
         username = request.form.get("username", "").strip().lower()
@@ -221,10 +221,14 @@ def register():
         if error is None:
             with get_db() as conn:
                 with conn.cursor() as cur:
+                    # The very first profile becomes the admin (can switch features on for others)
+                    cur.execute("SELECT COUNT(*) AS n FROM users")
+                    is_first = cur.fetchone()["n"] == 0
                     try:
                         cur.execute(
-                            "INSERT INTO users (username, display_name, password_hash) VALUES (%s, %s, %s)",
-                            (username, display_name, generate_password_hash(password)),
+                            "INSERT INTO users (username, display_name, password_hash, is_admin) "
+                            "VALUES (%s, %s, %s, %s)",
+                            (username, display_name, generate_password_hash(password), is_first),
                         )
                     except pymysql.err.IntegrityError:
                         error = "That username is taken."
@@ -233,7 +237,7 @@ def register():
                         codes = _new_recovery_codes(cur, user_id)
                         conn.commit()
                         cur.execute(
-                            "SELECT id, username, display_name, session_version FROM users WHERE id = %s",
+                            "SELECT id, username, display_name, session_version, is_admin FROM users WHERE id = %s",
                             (user_id,),
                         )
                         user = cur.fetchone()
@@ -248,7 +252,7 @@ def register():
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if g.user:
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("inventory.dashboard"))
     if request.method == "POST":
         username = request.form.get("username", "").strip().lower()
         password = request.form.get("password", "")
@@ -370,6 +374,70 @@ def account():
         with conn.cursor() as cur:
             left = _codes_left(cur, g.user["id"])
     return render_template("account.html", codes_left=left)
+
+
+# ---------------------------------------------------------------------------
+# Features that only some profiles get (e.g. the book tracker)
+# ---------------------------------------------------------------------------
+
+FEATURES = {"books": "Book tracker"}   # add more here later, e.g. "wardrobe": "Wardrobe"
+
+
+def has_feature(feature):
+    """True if the signed-in user has this feature switched on. Cached per request."""
+    if g.user is None:
+        return False
+    if "features" not in g:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT feature FROM user_features WHERE user_id = %s", (g.user["id"],))
+                g.features = {row["feature"] for row in cur.fetchall()}
+    return feature in g.features
+
+
+def require_feature(feature):
+    """Call from a blueprint's before_request: blocks the whole section on the server (403)."""
+    if not has_feature(feature):
+        abort(403)
+
+
+@bp.app_context_processor
+def inject_feature_check():
+    """Lets templates write {% if has_feature('books') %}."""
+    return {"has_feature": has_feature, "FEATURES": FEATURES}
+
+
+@bp.route("/admin/access", methods=["GET", "POST"])
+def admin_access():
+    """Admin only: choose which profiles get which features."""
+    if not g.user["is_admin"]:
+        abort(403)
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            if request.method == "POST":
+                feature = request.form.get("feature")
+                user_id = request.form.get("user_id", type=int)
+                if feature not in FEATURES or user_id is None:
+                    abort(400)
+                if request.form.get("enabled") == "1":
+                    cur.execute(
+                        "INSERT IGNORE INTO user_features (user_id, feature) VALUES (%s, %s)",
+                        (user_id, feature),
+                    )
+                else:
+                    cur.execute(
+                        "DELETE FROM user_features WHERE user_id = %s AND feature = %s",
+                        (user_id, feature),
+                    )
+                conn.commit()
+                flash("Access updated.", "success")
+                return redirect(url_for("auth.admin_access"))
+
+            cur.execute("SELECT id, username, display_name, is_admin FROM users ORDER BY display_name")
+            users = cur.fetchall()
+            cur.execute("SELECT user_id, feature FROM user_features")
+            enabled = {(row["user_id"], row["feature"]) for row in cur.fetchall()}
+    return render_template("admin_access.html", users=users, enabled=enabled)
 
 
 # ---------------------------------------------------------------------------

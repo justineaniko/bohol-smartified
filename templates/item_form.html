@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ 'Add item' if mode == 'add' else 'Edit ' ~ item.name }} · Bohol House{% endblock %}
+
+{% block content %}
+  <a href="{{ url_for('inventory.item_page', qr_code_id=item.qr_code_id) if mode == 'edit' else url_for('inventory.dashboard') }}" class="back-link">← Back</a>
+  <h1>{{ 'Add an item' if mode == 'add' else 'Edit ' ~ item.name }}</h1>
+
+  <form method="post" class="form-card" id="item-form">
+    {{ m.csrf() }}
+
+    <label>Name
+      <input name="name" maxlength="100" value="{{ item.name or '' }}" required autofocus placeholder="e.g. Rice, Dish soap, Blue hoodie">
+    </label>
+
+    <fieldset>
+      <legend>Category</legend>
+      <div class="segmented">
+        {% for key, label in categories.items() %}
+          <label><input type="radio" name="category" value="{{ key }}" {% if item.category == key %}checked{% endif %} required> {{ label }}</label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <div class="grid">
+      <label>Quantity
+        <input type="number" name="quantity" min="0" max="99999" value="{{ item.quantity if item.quantity is not none else 1 }}" required>
+      </label>
+      <label>Alert when at or below
+        <input type="number" name="threshold" min="0" max="99999" value="{{ item.threshold if item.threshold is not none else 0 }}" required>
+      </label>
+    </div>
+
+    <label>Where is it kept? <span class="muted">(optional)</span>
+      <input name="location" maxlength="60" value="{{ item.location or '' }}" placeholder="Pantry, fridge, closet…">
+    </label>
+
+    {# Shown for everything except clothes. Plain show/hide only; the server checks everything again. #}
+    <div class="cat-fields" data-for="food products other">
+      <label>Expiry date <span class="muted">(optional)</span>
+        <input type="date" name="expiry_date" value="{{ item.expiry_date or '' }}">
+      </label>
+    </div>
+
+    <div class="cat-fields" data-for="clothes">
+      <div class="grid">
+        <label>Size <input name="size" maxlength="20" value="{{ item.size or '' }}" placeholder="S, M, 8…"></label>
+        <label>Color <input name="color" maxlength="30" value="{{ item.color or '' }}"></label>
+      </div>
+      <label>Season
+        <select name="season">
+          <option value="">—</option>
+          {% for s in seasons %}<option value="{{ s }}" {% if item.season == s %}selected{% endif %}>{{ s|capitalize }}</option>{% endfor %}
+        </select>
+      </label>
+    </div>
+
+    <label>Notes <span class="muted">(optional)</span>
+      <textarea name="notes" rows="3" maxlength="2000">{{ item.notes or '' }}</textarea>
+    </label>
+
+    <label>
+      <input type="checkbox" name="private" role="switch" {% if item.private %}checked{% endif %}>
+      Private: only I can see this
+    </label>
+    <small class="hint">Leave off for shared household things like rice or soap.</small>
+
+    <button type="submit">{{ 'Add item' if mode == 'add' else 'Save changes' }}</button>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Show only the fields that fit the chosen category (clothes: size/color/season; others: expiry)
+  const form = document.getElementById('item-form');
+  function syncFields() {
+    const chosen = form.querySelector('input[name="category"]:checked');
+    const cat = chosen ? chosen.value : '';
+    form.querySelectorAll('.cat-fields').forEach(el => { el.hidden = !el.dataset.for.split(' ').includes(cat); });
+  }
+  form.addEventListener('change', syncFields);
+  syncFields();
+</script>
+{% endblock %}

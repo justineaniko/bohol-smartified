@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Bohol House{% endblock %}
+
+{% block content %}
+  <article class="auth-card center">
+    <p class="error-code">{{ code }}</p>
+    <h2>{{ title }}</h2>
+    <p class="muted">{{ message }}</p>
+    {% if g.user %}
+      <a href="{{ url_for('inventory.dashboard') }}" role="button">Back to supplies</a>
+    {% else %}
+      <a href="{{ url_for('auth.login') }}" role="button">Sign in</a>
+    {% endif %}
+  </article>
+{% endblock %}
