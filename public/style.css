@@ -400,3 +400,25 @@ button.on {
 /* Error pages */
 .error-code { font-size: 3.5rem; font-weight: 700; color: var(--pico-primary); margin: 0; }
 .auth-card.center [role="button"] { width: auto; }
+
+/* ---------- Locations (one QR per place) ---------- */
+a.location-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: var(--pico-block-spacing-vertical) var(--pico-block-spacing-horizontal);
+  background: var(--pico-card-background-color);
+  border-radius: var(--pico-border-radius);
+  box-shadow: var(--pico-card-box-shadow);
+  text-decoration: none;
+  color: var(--pico-color);
+  transition: transform 0.15s ease;
+}
+a.location-card:hover { transform: translateY(-2px); }
+.qr-path { font-family: var(--pico-font-family-monospace); overflow-wrap: anywhere; }
+.add-location { margin-top: 2rem; }
+.add-location h3 { margin-bottom: 0.75rem; }
+.shelf-section { margin-bottom: 1.75rem; }
+.shelf-section h2 { font-size: 1.1rem; margin-bottom: 0.6rem; }
+.empty-shelf { margin: 0; font-size: 0.9rem; }
+.qr-box { margin-top: 2rem; }

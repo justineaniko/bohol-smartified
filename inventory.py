@@ -1,109 +1,228 @@
-"""Supplies, food and clothes.
+import os
+import requests
 
-Split of work
-- ROUTES (bottom half): done. They read forms, validate them and pick templates.
-- DATA LAYER (top half): YOUR TODOs. Each function says what it gets and must return.
-  Until you write them, pages still load; they just show empty lists.
-
-Visibility rule for every query: a profile sees shared items (owner_id IS NULL)
-plus its OWN items. Never someone else's private items.
-"""
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from db import get_db  # noqa: F401  (you'll use this in the TODOs)
+from db import get_db  
 
 bp = Blueprint("inventory", __name__)
 
 CATEGORIES = {"products": "Products", "food": "Food", "clothes": "Clothes", "other": "Other"}
 SEASONS = ["all", "summer", "rainy", "cold"]
 SORTS = {"name": "Name", "quantity": "Quantity", "expiry": "Expiry date", "newest": "Newest"}
+VISIBLE = "(items.owner_id = %s OR items.owner_id IS NULL)"
+MAX_SHELVES = 10
 
 
-# =============================================================================
-# DATA LAYER: your TODOs
-# Every item dict you return needs these keys (None is fine where empty):
-#   id, qr_code_id, name, category, owner_id, owner_name, quantity, threshold,
-#   location, expiry_date (a date), size, color, season, notes, is_low (bool)
-# Tip: owner_name comes from LEFT JOIN users ON users.id = items.owner_id
-# Tip: is_low can be computed in SQL:  (quantity <= threshold) AS is_low
-# =============================================================================
+def list_items(user_id, category=None, q="", owner="all", location=None, low_only=False, sort="name"):
+    where = []
+    params = []
 
-def list_items(user_id, category=None, q="", owner="all", low_only=False, sort="name"):
-    """Return a list of item dicts this user may see.
+    if owner == "mine":
+        where.append("items.owner_id = %s")
+        params.append(user_id)
+    elif owner == "shared":
+        where.append("items.owner_id IS NULL")
+    else:
+        where.append(VISIBLE)
+        params.append(user_id)
 
-    category: one of CATEGORIES keys, or None for every category
-    q:        text to search in name/notes (LIKE %q%); "" means no search
-    owner:    "all" (shared + mine), "mine" (owner_id = user_id), "shared" (owner_id IS NULL)
-    low_only: only items where quantity <= threshold
-    sort:     one of SORTS keys -> ORDER BY name / quantity / expiry_date / created_at DESC
+    if location: 
+        where.append("location_id = %s")
+        params.append(location)
+    if category:
+        where.append("category = %s")
+        params.append(category)
+    if q: 
+        where.append("(name LIKE %s OR notes LIKE %s)")
+        params.extend([f"%{q}%", f"%{q}%"])
+    if low_only:
+        where.append("quantity <= threshold")
 
-    Build the WHERE clause from pieces + a params list. Never put values into the
-    SQL string with f-strings; pass them as execute(sql, params).
-    ORDER BY can't use %s, so map `sort` to a column name from a fixed dict.
-    """
-    # TODO
-    return []
+    order_by = {
+        "name": "name",
+        "quantity": "quantity",
+        "expiry": "expiry_date",
+        "newest": "items.created_at DESC"
+    }.get(sort, "name")
+
+    sql = (
+        "SELECT items.*, users.display_name AS owner_name, (quantity <= threshold) AS is_low "
+        "FROM items LEFT JOIN users ON items.owner_id = users.id "
+        "WHERE " + " AND ".join(where) +
+        " ORDER BY " + order_by
+    )
+
+    with get_db() as conn: 
+        with conn.cursor() as cur:
+            cur.execute(sql, params)
+            return cur.fetchall()
 
 
-def get_item(qr_code_id, user_id):
-    """Return one item dict (same keys as above) or None if missing or not visible to user_id."""
-    # TODO
-    return None
+def get_item(item_id, user_id):
+    sql = (
+        "SELECT items.*, users.display_name AS owner_name, (quantity <= threshold) AS is_low "
+        "FROM items LEFT JOIN users ON items.owner_id = users.id "
+        " WHERE items.id = %s AND " + VISIBLE
+    )
+    with get_db() as conn: 
+        with conn.cursor() as cur:
+            cur.execute(sql, (item_id, user_id))
+            return cur.fetchone()
 
 
 def create_item(data, user_id):
-    """INSERT a new item. `data` is the dict from _read_item_form(). Return the new qr_code_id.
-
-    - qr_code_id: make one from the name, e.g. "Dish Soap" -> "dish-soap";
-      if that's taken, add -2, -3... (SELECT to check first)
-    - owner_id: user_id if data["private"] else None
-    """
-    # TODO
-    return None
+    owner_id = user_id if data["private"] else None
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO items (name, category, owner_id, quantity, threshold, location, expiry_date, size, color, season, notes)"
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (data["name"], data["category"], data["owner_id"],
+                data["quantity"], data["threshold"], data["location"], data["expiry_date"], data["size"], data["color"], data["season"], data["notes"]),
+            )
+            conn.commit()
+            return cur.lastrowid
 
 
 def update_item(item_id, data, user_id):
-    """UPDATE an item the user may see. Keep its qr_code_id (printed QRs must keep working)."""
-    # TODO
+    owner_id = user_id if data["private"] else None
+    sql = (
+        "UPDATE items SET name = %s, category = %s, owner_id = %s, quantity = %s, threshold = %s, location = %s, expiry_date = %s, size = %s, color = %s, season = %s, notes = %s"
+        "WHERE id = %s AND " + VISIBLE
+    )
+    params = (data["name"], data["category"], data["owner_id"], data["quantity"], data["threshold"], data["location"], 
+              data["expiry_date"], data["size"], data["color"], data["season"], data["notes"], item_id, user_id)
     pass
 
 
-def delete_item(item_id, user_id):
-    """DELETE an item the user may see."""
-    # TODO
+def delete_item(item_id, user_id, delta):
+    sql = "DELETE FROM items WHERE id = %s AND " + VISIBLE
     pass
 
 
-def change_quantity(qr_code_id, user_id, delta):
-    """Add delta (+1, -1, +5...) to quantity, never below 0. Return the updated item dict.
-
-    Do it in one statement so two phones tapping at once can't clash:
-      UPDATE items SET quantity = GREATEST(quantity + %s, 0) WHERE ...
-    Then call check_low_stock(item).
-    """
-    # TODO
-    return None
+def change_quantity(item_id, user_id, delta):
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE items SET quantity = GREATEST(quantity + %s, 0) "
+                "WHERE id = %s AND " + VISIBLE,
+                (delta, item_id, user_id)
+            )
+            conn.commit()
+    
+    item = get_item(item_id, user_id)
+    check_low_stock(item)
+    return item
 
 
 def check_low_stock(item):
-    """Alert once when an item becomes low; reset the flag when it's restocked.
+    if item is None:
+        return
+    
+    is_low = item["quantity"] <= item["threshold"]
 
-    - quantity <= threshold and not low_stock_alert_sent -> send_discord_alert(...), set flag TRUE
-    - quantity >  threshold and low_stock_alert_sent     -> set flag FALSE
-    """
-    # TODO
-    pass
+    if is_low and not item["low_stock_alert_sent"]:
+        send_discord_alert(f"HELLO! {item['name']} is running low ({item['quantity']} left)")
+        set_alert_flag(item["id"], True)
+
+    elif not is_low and item["low_stock_alert_sent"]:
+        set_alert_flag(item["id"], False)
+
+def set_alert_flag(item_id, value):
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE items SET low_stock_alert_sent = %s WHERE id = %s",
+                (value, item_id),
+            )
+            conn.commit()
 
 
 def send_discord_alert(message):
-    """POST {"content": message} to DISCORD_WEBHOOK_URL (skip if it's empty)."""
-    # TODO: import os, requests; requests.post(url, json={...}, timeout=5)
-    pass
+    url = os.environ.get("DISCORD_WEBHOOK_URL")
+    if not url:
+       return
+
+    try:
+        requests.post(url, json = {"content": message}, timeout = 5)
+    except requests.RequestException:
+        pass
 
 
-# =============================================================================
-# ROUTES: done
-# =============================================================================
+def list_locations():
+    """Return every location as a dict (id, slug, name, shelf_count), sorted by name."""
+
+    sql = ( 
+        "SELECT id, slug, name, shelf_count "
+        "FROM locations "
+        "ORDER BY name"
+    )
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql)
+            return cur.fetchall()
+
+def get_location(slug):
+    """Return one location dict by its slug, or None if there isn't one."""
+    if slug: 
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id, slug, name, shelf_count FROM locations WHERE slug = %s",
+                    (slug,),
+                )
+
+                return cur.fetchone()
+    else:
+        return None
+
+def create_location(slug, name, shelf_count):
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO locations (slug, name, shelf_count) "
+                "VALUES (%s, %s, %s)",
+                (slug, name, shelf_count)
+            )
+            conn.commit()
+            return cur.lastrowid
+
+def _ordinal(n):
+    """1 -> '1st', 2 -> '2nd', 3 -> '3rd', 11 -> '11th'."""
+    if 10 <= n % 100 <= 20:
+        return f"{n}th"
+    return f"{n}{ {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th') }"
+
+
+def _locations_by_id():
+    """All locations keyed by id, loaded once per request."""
+    if "locations_by_id" not in g:
+        g.locations_by_id = {loc["id"]: loc for loc in (list_locations() or [])}
+    return g.locations_by_id
+
+
+def _location_label(item):
+    """'Dining room fridge · 2nd shelf' for an item, or '' if it has no location."""
+    loc = _locations_by_id().get(item.get("location_id"))
+    if not loc:
+        return ""
+    if item.get("shelf"):
+        return f"{loc['name']} · {_ordinal(item['shelf'])} shelf"
+    return loc["name"]
+
+
+@bp.app_context_processor
+def _inject_location_helpers():
+    """Templates (cards, item page) use these to show where an item is kept."""
+    return {"location_label": _location_label, "ordinal": _ordinal}
+
+
+def _slugify(name):
+    """'Pink Room Fridge!' -> 'pink-room-fridge'."""
+    slug = "".join(c if c.isalnum() else "-" for c in name.lower())
+    slug = "-".join(part for part in slug.split("-") if part)
+    return slug[:50] or "location"
+
 
 def _read_item_form():
     """Validate the add/edit form. Returns (data, error)."""
@@ -113,7 +232,8 @@ def _read_item_form():
         "category": f.get("category", ""),
         "quantity": f.get("quantity", type=int),
         "threshold": f.get("threshold", type=int),
-        "location": f.get("location", "").strip()[:60] or None,
+        "location_id": f.get("location_id", type=int),
+        "shelf": f.get("shelf", type=int),
         "expiry_date": f.get("expiry_date") or None,  # "YYYY-MM-DD" string or None
         "size": f.get("size", "").strip()[:20] or None,
         "color": f.get("color", "").strip()[:30] or None,
@@ -121,6 +241,14 @@ def _read_item_form():
         "notes": f.get("notes", "").strip()[:2000] or None,
         "private": f.get("private") == "on",
     }
+
+    loc = _locations_by_id().get(data["location_id"])
+    if loc is None:
+        data["location_id"] = None
+        data["shelf"] = None
+    elif not loc["shelf_count"] or data["shelf"] is None or not 1 <= data["shelf"] <= loc["shelf_count"]:
+        data["shelf"] = None
+
     if not data["name"]:
         return data, "Give the item a name."
     if data["category"] not in CATEGORIES:
@@ -147,6 +275,24 @@ def _filters_from_args():
     }
 
 
+def _back_url(item_id):
+    """Where to go after a +/- tap: the list, a location page, or the item page."""
+    back = request.form.get("back")
+    if back == "list":
+        return url_for("inventory.dashboard")
+    if back == "location":
+        loc = get_location(request.form.get("slug", ""))
+        if loc:
+            return url_for("inventory.location_page", slug=loc["slug"])
+    return url_for("inventory.item_page", item_id=item_id)
+
+
+def _form_context():
+    """Everything item_form.html needs besides the item itself."""
+    return {"categories": CATEGORIES, "seasons": SEASONS,
+            "locations": list_locations() or [], "max_shelves": MAX_SHELVES}
+
+
 @bp.route("/")
 def dashboard():
     filters = _filters_from_args()
@@ -155,50 +301,54 @@ def dashboard():
                            categories=CATEGORIES, sorts=SORTS)
 
 
-@bp.route("/item/<qr_code_id>")
-def item_page(qr_code_id):
-    # GET only: opening a QR link must never change data
-    item = get_item(qr_code_id, g.user["id"])
+@bp.route("/item/<int:item_id>")
+def item_page(item_id):
+    # GET only: opening a link must never change data
+    item = get_item(item_id, g.user["id"])
     if item is None:
         abort(404)
-    return render_template("item.html", item=item, categories=CATEGORIES)
+    location = _locations_by_id().get(item.get("location_id"))
+    return render_template("item.html", item=item, location=location, categories=CATEGORIES)
 
 
-@bp.route("/item/<qr_code_id>/use", methods=["POST"])
-def use_item(qr_code_id):
-    amount = max(request.form.get("amount", 1, type=int), 1)
-    change_quantity(qr_code_id, g.user["id"], -amount)
-    return redirect(request.form.get("back") == "list" and url_for("inventory.dashboard")
-                    or url_for("inventory.item_page", qr_code_id=qr_code_id))
+@bp.route("/item/<int:item_id>/use", methods=["POST"])
+def use_item(item_id):
+    amount = max(request.form.get("amount", 1, type=int) or 1, 1)
+    change_quantity(item_id, g.user["id"], -amount)
+    return redirect(_back_url(item_id))
 
 
-@bp.route("/item/<qr_code_id>/restock", methods=["POST"])
-def restock_item(qr_code_id):
-    amount = max(request.form.get("amount", 1, type=int), 1)
-    change_quantity(qr_code_id, g.user["id"], amount)
-    return redirect(request.form.get("back") == "list" and url_for("inventory.dashboard")
-                    or url_for("inventory.item_page", qr_code_id=qr_code_id))
+@bp.route("/item/<int:item_id>/restock", methods=["POST"])
+def restock_item(item_id):
+    amount = max(request.form.get("amount", 1, type=int) or 1, 1)
+    change_quantity(item_id, g.user["id"], amount)
+    return redirect(_back_url(item_id))
 
 
 @bp.route("/add", methods=["GET", "POST"])
 def add_item():
-    data = {"category": request.args.get("category", "products"), "quantity": 1, "threshold": 0}
+    # ?location_id=3&shelf=2 pre-fills the form (used by "Add item here" on a location page)
+    data = {"category": request.args.get("category", "products"), "quantity": 1, "threshold": 0,
+            "location_id": request.args.get("location_id", type=int),
+            "shelf": request.args.get("shelf", type=int)}
     if request.method == "POST":
         data, error = _read_item_form()
         if error is None:
-            qr_code_id = create_item(data, g.user["id"])
+            new_id = create_item(data, g.user["id"])
             flash(f"Added {data['name']}.", "success")
-            if qr_code_id:
-                return redirect(url_for("inventory.item_page", qr_code_id=qr_code_id))
+            loc = _locations_by_id().get(data["location_id"])
+            if loc:
+                return redirect(url_for("inventory.location_page", slug=loc["slug"]))
+            if new_id:
+                return redirect(url_for("inventory.item_page", item_id=new_id))
             return redirect(url_for("inventory.dashboard"))
         flash(error, "error")
-    return render_template("item_form.html", item=data, mode="add",
-                           categories=CATEGORIES, seasons=SEASONS)
+    return render_template("item_form.html", item=data, mode="add", **_form_context())
 
 
-@bp.route("/item/<qr_code_id>/edit", methods=["GET", "POST"])
-def edit_item(qr_code_id):
-    item = get_item(qr_code_id, g.user["id"])
+@bp.route("/item/<int:item_id>/edit", methods=["GET", "POST"])
+def edit_item(item_id):
+    item = get_item(item_id, g.user["id"])
     if item is None:
         abort(404)
     if request.method == "POST":
@@ -206,20 +356,68 @@ def edit_item(qr_code_id):
         if error is None:
             update_item(item["id"], data, g.user["id"])
             flash("Saved.", "success")
-            return redirect(url_for("inventory.item_page", qr_code_id=qr_code_id))
+            return redirect(url_for("inventory.item_page", item_id=item_id))
         flash(error, "error")
         item = {**item, **data}
     else:
         item = {**item, "private": item["owner_id"] is not None}
-    return render_template("item_form.html", item=item, mode="edit",
-                           categories=CATEGORIES, seasons=SEASONS)
+    return render_template("item_form.html", item=item, mode="edit", **_form_context())
 
 
-@bp.route("/item/<qr_code_id>/delete", methods=["POST"])
-def remove_item(qr_code_id):
-    item = get_item(qr_code_id, g.user["id"])
+@bp.route("/item/<int:item_id>/delete", methods=["POST"])
+def remove_item(item_id):
+    item = get_item(item_id, g.user["id"])
     if item is None:
         abort(404)
     delete_item(item["id"], g.user["id"])
     flash(f"Deleted {item['name']}.", "success")
+    loc = _locations_by_id().get(item.get("location_id"))
+    if loc:
+        return redirect(url_for("inventory.location_page", slug=loc["slug"]))
     return redirect(url_for("inventory.dashboard"))
+
+
+@bp.route("/locations", methods=["GET", "POST"])
+def locations():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()[:60]
+        shelf_count = request.form.get("shelf_count", type=int)
+        if shelf_count is not None and not 1 <= shelf_count <= MAX_SHELVES:
+            shelf_count = None
+        if not name:
+            flash("Give the location a name.", "error")
+        else:
+            # Unique slug for the QR URL: "pink-room-fridge", then "-2", "-3"...
+            base = _slugify(name)
+            slug, n = base, 2
+            while get_location(slug):
+                slug, n = f"{base}-{n}", n + 1
+            create_location(slug, name, shelf_count)
+            flash(f"Added {name}.", "success")
+            return redirect(url_for("inventory.locations"))
+    return render_template("locations.html", locations=list_locations() or [],
+                           max_shelves=MAX_SHELVES)
+
+
+@bp.route("/location/<slug>")
+def location_page(slug):
+    # This is the page a location's QR code opens. GET only, so scanning never changes stock.
+    loc = get_location(slug)
+    if loc is None:
+        abort(404)
+    items = list_items(g.user["id"], location=loc["id"]) or []
+
+    # Group by shelf: [(1, [...]), (2, [...]), ..., (None, [...no shelf...])]
+    groups = []
+    if loc["shelf_count"]:
+        for n in range(1, loc["shelf_count"] + 1):
+            on_shelf = [i for i in items if i.get("shelf") == n]
+            groups.append((n, on_shelf))
+        loose = [i for i in items if not i.get("shelf") or i["shelf"] > loc["shelf_count"]]
+        if loose:
+            groups.append((None, loose))
+    else:
+        groups.append((None, items))
+
+    return render_template("location.html", location=loc, items=items, groups=groups,
+                           categories=CATEGORIES)

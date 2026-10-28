@@ -37,23 +37,33 @@ CREATE TABLE IF NOT EXISTS user_features (
 -- ---------------------------------------------------------------------------
 -- Supplies, food and clothes (inventory.py — your data layer)
 -- ---------------------------------------------------------------------------
+-- Places in the house. Each one gets ONE printed QR: /location/<slug>
+CREATE TABLE IF NOT EXISTS locations (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  slug        VARCHAR(60)  NOT NULL UNIQUE,   -- goes in the QR URL: /location/<slug>
+  name        VARCHAR(60)  NOT NULL,          -- 'Dining room fridge'
+  shelf_count TINYINT      NULL,              -- NULL = no shelves
+  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS items (
   id                   INT AUTO_INCREMENT PRIMARY KEY,
-  qr_code_id           VARCHAR(60)  NOT NULL UNIQUE,  -- goes in the QR URL: /item/<qr_code_id>
   name                 VARCHAR(100) NOT NULL,
   category             VARCHAR(20)  NOT NULL,         -- 'products', 'food', 'clothes', 'other'
   owner_id             INT          NULL,             -- NULL = shared by the whole house
   quantity             INT          NOT NULL DEFAULT 0,
   threshold            INT          NOT NULL DEFAULT 0, -- low when quantity <= threshold
   low_stock_alert_sent BOOLEAN      NOT NULL DEFAULT FALSE,
-  location             VARCHAR(60)  NULL,             -- 'pantry', 'fridge', 'closet'...
+  location_id          INT          NULL,             -- where it's kept (NULL = not set)
+  shelf                TINYINT      NULL,             -- 1st, 2nd... shelf of that location
   expiry_date          DATE         NULL,             -- mainly food
   size                 VARCHAR(20)  NULL,             -- clothes
   color                VARCHAR(30)  NULL,             -- clothes
   season               VARCHAR(20)  NULL,             -- clothes: 'all', 'rainy', 'summer'...
   notes                TEXT         NULL,
   created_at           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL
+  FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL
 );
 
 -- ---------------------------------------------------------------------------

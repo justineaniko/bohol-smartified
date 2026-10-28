@@ -8,7 +8,10 @@
       <h1>Supplies</h1>
       <p>{{ items|length }} item{{ '' if items|length == 1 else 's' }}{% if filters.q or filters.category or filters.low_only or filters.owner != 'all' %} matching{% endif %}</p>
     </hgroup>
-    <a href="{{ url_for('inventory.add_item') }}" role="button">+ Add item</a>
+    <div class="actions">
+      <a href="{{ url_for('inventory.locations') }}" role="button" class="outline">Locations</a>
+      <a href="{{ url_for('inventory.add_item') }}" role="button">+ Add item</a>
+    </div>
   </header>
 
   {% set low = items | selectattr('is_low') | list %}
@@ -53,6 +56,6 @@
   {% elif filters.q or filters.category or filters.low_only or filters.owner != 'all' %}
     {{ m.empty("Nothing matches those filters.", url_for('inventory.dashboard'), "Clear filters") }}
   {% else %}
-    {{ m.empty("No supplies yet. Add the first one, then print its QR code.", url_for('inventory.add_item'), "+ Add item") }}
+    {{ m.empty("No supplies yet. Add the first one.", url_for('inventory.add_item'), "+ Add item") }}
   {% endif %}
 {% endblock %}

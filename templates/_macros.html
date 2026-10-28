@@ -18,10 +18,10 @@
   {% endif %}
 {% endmacro %}
 
-{% macro item_card(item, categories, back="list") %}
+{% macro item_card(item, categories, back="list", slug=None) %}
   <article class="card {% if item.is_low %}low{% endif %}">
     <header>
-      <a href="{{ url_for('inventory.item_page', qr_code_id=item.qr_code_id) }}" class="card-title">{{ item.name }}</a>
+      <a href="{{ url_for('inventory.item_page', item_id=item.id) }}" class="card-title">{{ item.name }}</a>
       {% if item.is_low %}<span class="badge badge-low">Low</span>{% else %}<span class="badge badge-ok">OK</span>{% endif %}
     </header>
 
@@ -29,7 +29,7 @@
     <div class="meta">
       <span class="chip">{{ categories.get(item.category, item.category) }}</span>
       {% if item.owner_id %}<span class="chip chip-private">{{ item.owner_name or 'Mine' }}</span>{% else %}<span class="chip">Shared</span>{% endif %}
-      {% if item.location %}<span class="chip">{{ item.location }}</span>{% endif %}
+      {% set where = location_label(item) %}{% if where and back != "location" %}<span class="chip">📍 {{ where }}</span>{% endif %}
       {% if item.category == 'clothes' and item.size %}<span class="chip">Size {{ item.size }}</span>{% endif %}
       {{ expiry_badge(item.expiry_date) }}
     </div>
@@ -37,12 +37,12 @@
 
     <footer>
       {# POST forms, so viewing a page never changes stock #}
-      <form method="post" action="{{ url_for('inventory.use_item', qr_code_id=item.qr_code_id) }}">
-        {{ csrf() }}<input type="hidden" name="back" value="{{ back }}">
+      <form method="post" action="{{ url_for('inventory.use_item', item_id=item.id) }}">
+        {{ csrf() }}<input type="hidden" name="back" value="{{ back }}">{% if slug %}<input type="hidden" name="slug" value="{{ slug }}">{% endif %}
         <button type="submit" class="outline" aria-label="Use one {{ item.name }}">−1</button>
       </form>
-      <form method="post" action="{{ url_for('inventory.restock_item', qr_code_id=item.qr_code_id) }}">
-        {{ csrf() }}<input type="hidden" name="back" value="{{ back }}">
+      <form method="post" action="{{ url_for('inventory.restock_item', item_id=item.id) }}">
+        {{ csrf() }}<input type="hidden" name="back" value="{{ back }}">{% if slug %}<input type="hidden" name="slug" value="{{ slug }}">{% endif %}
         <button type="submit" aria-label="Add one {{ item.name }}">+1</button>
       </form>
     </footer>

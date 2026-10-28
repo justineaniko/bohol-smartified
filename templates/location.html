@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ location.name }} · Bohol House{% endblock %}
+
+{% block content %}
+  <a href="{{ url_for('inventory.locations') }}" class="back-link">← Locations</a>
+
+  <header class="top">
+    <hgroup>
+      <h1>{{ location.name }}</h1>
+      <p>{{ items|length }} item{{ '' if items|length == 1 else 's' }}{% if location.shelf_count %} · {{ location.shelf_count }} shelves{% endif %}</p>
+    </hgroup>
+    <a href="{{ url_for('inventory.add_item', location_id=location.id) }}" role="button">+ Add item here</a>
+  </header>
+
+  {% set low = items | selectattr('is_low') | list %}
+  {% if low %}
+    <article class="alert"><strong>{{ low|length }} running low:</strong> {{ low | map(attribute='name') | join(', ') }}</article>
+  {% endif %}
+
+  {% for shelf, shelf_items in groups %}
+    <section class="shelf-section">
+      {% if location.shelf_count %}
+        <div class="section-head">
+          <h2>{{ ordinal(shelf) ~ ' shelf' if shelf else 'No shelf set' }}</h2>
+          {% if shelf %}<a href="{{ url_for('inventory.add_item', location_id=location.id, shelf=shelf) }}" class="clear-link">+ Add here</a>{% endif %}
+        </div>
+      {% endif %}
+      {% if shelf_items %}
+        <div class="grid-cards">
+          {% for item in shelf_items %}{{ m.item_card(item, categories, back="location", slug=location.slug) }}{% endfor %}
+        </div>
+      {% elif location.shelf_count %}
+        <p class="muted empty-shelf">Nothing on this shelf.</p>
+      {% else %}
+        {{ m.empty("Nothing here yet.", url_for('inventory.add_item', location_id=location.id), "+ Add item here") }}
+      {% endif %}
+    </section>
+  {% endfor %}
+
+  <article class="qr-box">
+    <h3>QR code</h3>
+    <p class="muted">Print a QR that opens this link and stick it on the {{ location.name|lower }}:</p>
+    <code class="qr-url">{{ url_for('inventory.location_page', slug=location.slug, _external=True) }}</code>
+  </article>
+{% endblock %}

@@ -3,7 +3,11 @@
 {% block title %}{{ item.name }} · Bohol House{% endblock %}
 
 {% block content %}
-  <a href="{{ url_for('inventory.dashboard') }}" class="back-link">← Supplies</a>
+  {% if location %}
+    <a href="{{ url_for('inventory.location_page', slug=location.slug) }}" class="back-link">← {{ location.name }}</a>
+  {% else %}
+    <a href="{{ url_for('inventory.dashboard') }}" class="back-link">← Supplies</a>
+  {% endif %}
 
   <article class="item-hero {% if item.is_low %}low{% endif %}">
     <header class="item-hero-head">
@@ -12,7 +16,7 @@
         <p>
           {{ categories.get(item.category, item.category) }}
           · {% if item.owner_id %}{{ item.owner_name or 'Mine' }} (private){% else %}Shared{% endif %}
-          {% if item.location %}· {{ item.location }}{% endif %}
+          {% if location %}· <a href="{{ url_for('inventory.location_page', slug=location.slug) }}">{{ location_label(item) }}</a>{% endif %}
         </p>
       </hgroup>
       {% if item.is_low %}<span class="badge badge-low">Running low</span>{% else %}<span class="badge badge-ok">Stocked</span>{% endif %}
@@ -22,13 +26,13 @@
     <p class="muted center">Alert when {{ item.threshold }} or fewer left</p>
     {% if item.expiry_date %}<p class="center">{{ m.expiry_badge(item.expiry_date) }}</p>{% endif %}
 
-    {# Big buttons for scanning a QR in the pantry. Both are POST, so opening the QR link never changes stock. #}
+    {# Big buttons. Both are POST, so just opening this page never changes stock. #}
     <div class="big-actions">
-      <form method="post" action="{{ url_for('inventory.use_item', qr_code_id=item.qr_code_id) }}">
+      <form method="post" action="{{ url_for('inventory.use_item', item_id=item.id) }}">
         {{ m.csrf() }}
         <button type="submit" class="outline">− Use 1</button>
       </form>
-      <form method="post" action="{{ url_for('inventory.restock_item', qr_code_id=item.qr_code_id) }}">
+      <form method="post" action="{{ url_for('inventory.restock_item', item_id=item.id) }}">
         {{ m.csrf() }}
         <button type="submit">+ Add 1</button>
       </form>
@@ -36,7 +40,7 @@
 
     <details class="restock-more">
       <summary>Restock several</summary>
-      <form method="post" action="{{ url_for('inventory.restock_item', qr_code_id=item.qr_code_id) }}" class="inline-form">
+      <form method="post" action="{{ url_for('inventory.restock_item', item_id=item.id) }}" class="inline-form">
         {{ m.csrf() }}
         <input type="number" name="amount" min="1" max="999" value="5" aria-label="How many">
         <button type="submit">Add</button>
@@ -59,14 +63,8 @@
     <article><h3>Notes</h3><p class="pre-line">{{ item.notes }}</p></article>
   {% endif %}
 
-  <article>
-    <h3>QR code</h3>
-    <p class="muted">This item's QR should open:</p>
-    <code class="qr-url">{{ url_for('inventory.item_page', qr_code_id=item.qr_code_id, _external=True) }}</code>
-  </article>
-
   <div class="page-actions">
-    <a href="{{ url_for('inventory.edit_item', qr_code_id=item.qr_code_id) }}" role="button" class="outline">Edit</a>
+    <a href="{{ url_for('inventory.edit_item', item_id=item.id) }}" role="button" class="outline">Edit</a>
   </div>
-  {{ m.delete_form(url_for('inventory.remove_item', qr_code_id=item.qr_code_id), item.name) }}
+  {{ m.delete_form(url_for('inventory.remove_item', item_id=item.id), item.name) }}
 {% endblock %}

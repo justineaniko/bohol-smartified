@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Locations · Bohol House{% endblock %}
+
+{% block content %}
+  <a href="{{ url_for('inventory.dashboard') }}" class="back-link">← Supplies</a>
+
+  <header class="top">
+    <hgroup>
+      <h1>Locations</h1>
+      <p>Each place gets one QR code. Scanning it opens everything kept there.</p>
+    </hgroup>
+  </header>
+
+  {% if locations %}
+    <div class="grid-cards">
+      {% for loc in locations %}
+        <a class="card location-card" href="{{ url_for('inventory.location_page', slug=loc.slug) }}">
+          <span class="card-title">{{ loc.name }}</span>
+          <div class="meta">
+            {% if loc.shelf_count %}<span class="chip chip-accent">{{ loc.shelf_count }} shelves</span>{% else %}<span class="chip">No shelves</span>{% endif %}
+          </div>
+          <small class="muted qr-path">/location/{{ loc.slug }}</small>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    {{ m.empty("No locations yet. Add the first one below.") }}
+  {% endif %}
+
+  <article class="form-card add-location">
+    <h3>Add a location</h3>
+    <form method="post">
+      {{ m.csrf() }}
+      <div class="grid">
+        <label>Name
+          <input name="name" maxlength="60" required placeholder="e.g. Pink room fridge">
+        </label>
+        <label>Shelves
+          <select name="shelf_count">
+            <option value="">No shelves</option>
+            {% for n in range(1, max_shelves + 1) %}
+              <option value="{{ n }}">{{ n }} shel{{ 'f' if n == 1 else 'ves' }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <button type="submit">Add location</button>
+    </form>
+  </article>
+{% endblock %}

@@ -3,7 +3,7 @@
 {% block title %}{{ 'Add item' if mode == 'add' else 'Edit ' ~ item.name }} · Bohol House{% endblock %}
 
 {% block content %}
-  <a href="{{ url_for('inventory.item_page', qr_code_id=item.qr_code_id) if mode == 'edit' else url_for('inventory.dashboard') }}" class="back-link">← Back</a>
+  <a href="{{ url_for('inventory.item_page', item_id=item.id) if mode == 'edit' else url_for('inventory.dashboard') }}" class="back-link">← Back</a>
   <h1>{{ 'Add an item' if mode == 'add' else 'Edit ' ~ item.name }}</h1>
 
   <form method="post" class="form-card" id="item-form">
@@ -31,9 +31,26 @@
       </label>
     </div>
 
-    <label>Where is it kept? <span class="muted">(optional)</span>
-      <input name="location" maxlength="60" value="{{ item.location or '' }}" placeholder="Pantry, fridge, closet…">
-    </label>
+    <div class="grid">
+      <label>Where is it kept? <span class="muted">(optional)</span>
+        <select name="location_id" id="location-select">
+          <option value="" data-shelves="0">—</option>
+          {% for loc in locations %}
+            <option value="{{ loc.id }}" data-shelves="{{ loc.shelf_count or 0 }}" {% if item.location_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      {# Only shown when the chosen location has shelves; extra shelf numbers are hidden too #}
+      <label id="shelf-field">Shelf
+        <select name="shelf" id="shelf-select">
+          <option value="">—</option>
+          {% for n in range(1, max_shelves + 1) %}
+            <option value="{{ n }}" {% if item.shelf == n %}selected{% endif %}>{{ ordinal(n) }} shelf</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <small class="hint">Missing a place? <a href="{{ url_for('inventory.locations') }}">Add a location</a></small>
 
     {# Shown for everything except clothes. Plain show/hide only; the server checks everything again. #}
     <div class="cat-fields" data-for="food products other">
@@ -80,5 +97,20 @@
   }
   form.addEventListener('change', syncFields);
   syncFields();
+
+  // Shelf picker: hide it for places without shelves, and hide shelf numbers the place doesn't have
+  const locSelect = document.getElementById('location-select');
+  const shelfField = document.getElementById('shelf-field');
+  const shelfSelect = document.getElementById('shelf-select');
+  function syncShelves() {
+    const count = Number(locSelect.selectedOptions[0].dataset.shelves || 0);
+    shelfField.hidden = count === 0;
+    shelfSelect.querySelectorAll('option').forEach(opt => {
+      opt.hidden = opt.value !== '' && Number(opt.value) > count;
+    });
+    if (Number(shelfSelect.value) > count) shelfSelect.value = '';
+  }
+  locSelect.addEventListener('change', syncShelves);
+  syncShelves();
 </script>
 {% endblock %}
