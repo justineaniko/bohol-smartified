@@ -76,9 +76,12 @@ def create_item(data, user_id):
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO items (name, category, owner_id, quantity, threshold, location, expiry_date, size, color, season, notes)"
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (data["name"], data["category"], data["owner_id"],
-                data["quantity"], data["threshold"], data["location"], data["expiry_date"], data["size"], data["color"], data["season"], data["notes"]),
+                "INSERT INTO items (name, brand, pack_size, category, owner_id, quantity, threshold, "
+                "location_id, shelf, expiry_date, size, color, season, notes) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (data["name"], data["brand"], data["pack_size"], data["category"], owner_id,
+                 data["quantity"], data["threshold"], data["location_id"], data["shelf"],
+                 data["expiry_date"], data["size"], data["color"], data["season"], data["notes"]),
             )
             conn.commit()
             return cur.lastrowid
@@ -87,17 +90,27 @@ def create_item(data, user_id):
 def update_item(item_id, data, user_id):
     owner_id = user_id if data["private"] else None
     sql = (
-        "UPDATE items SET name = %s, category = %s, owner_id = %s, quantity = %s, threshold = %s, location = %s, expiry_date = %s, size = %s, color = %s, season = %s, notes = %s"
+        "UPDATE items SET name = %s, brand = %s, pack_size = %s, category = %s, owner_id = %s, "
+        "quantity = %s, threshold = %s, location_id = %s, shelf = %s, expiry_date = %s, "
+        "size = %s, color = %s, season = %s, notes = %s "
         "WHERE id = %s AND " + VISIBLE
     )
-    params = (data["name"], data["category"], data["owner_id"], data["quantity"], data["threshold"], data["location"], 
-              data["expiry_date"], data["size"], data["color"], data["season"], data["notes"], item_id, user_id)
-    pass
+    params = (data["name"], data["brand"], data["pack_size"], data["category"], owner_id,
+              data["quantity"], data["threshold"], data["location_id"], data["shelf"],
+              data["expiry_date"], data["size"], data["color"], data["season"], data["notes"],
+              item_id, user_id)
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params)
+            conn.commit()
 
 
-def delete_item(item_id, user_id, delta):
+def delete_item(item_id, user_id):
     sql = "DELETE FROM items WHERE id = %s AND " + VISIBLE
-    pass
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, (item_id, user_id))
+            conn.commit()
 
 
 def change_quantity(item_id, user_id, delta):
@@ -229,6 +242,8 @@ def _read_item_form():
     f = request.form
     data = {
         "name": f.get("name", "").strip()[:100],
+        "brand": f.get("brand", "").strip()[:60] or None,
+        "pack_size": f.get("pack_size", "").strip()[:30] or None,
         "category": f.get("category", ""),
         "quantity": f.get("quantity", type=int),
         "threshold": f.get("threshold", type=int),
@@ -259,6 +274,7 @@ def _read_item_form():
         return data, "Alert level must be 0 or more."
     if data["category"] == "clothes":
         data["expiry_date"] = None
+        data["pack_size"] = None
     else:
         data.update(size=None, color=None, season=None)
     return data, None

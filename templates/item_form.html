@@ -13,6 +13,10 @@
       <input name="name" maxlength="100" value="{{ item.name or '' }}" required autofocus placeholder="e.g. Rice, Dish soap, Blue hoodie">
     </label>
 
+    <label>Brand <span class="muted">(optional)</span>
+      <input name="brand" maxlength="60" value="{{ item.brand or '' }}" placeholder="e.g. Joy, Nestlé">
+    </label>
+
     <fieldset>
       <legend>Category</legend>
       <div class="segmented">
@@ -54,9 +58,14 @@
 
     {# Shown for everything except clothes. Plain show/hide only; the server checks everything again. #}
     <div class="cat-fields" data-for="food products other">
-      <label>Expiry date <span class="muted">(optional)</span>
-        <input type="date" name="expiry_date" value="{{ item.expiry_date or '' }}">
-      </label>
+      <div class="grid">
+        <label>Size <span class="muted">(optional)</span>
+          <input name="pack_size" maxlength="30" value="{{ item.pack_size or '' }}" placeholder="5 kg, 500 ml, 12 pcs">
+        </label>
+        <label>Expiry date <span class="muted">(optional)</span>
+          <input type="date" name="expiry_date" value="{{ item.expiry_date or '' }}">
+        </label>
+      </div>
     </div>
 
     <div class="cat-fields" data-for="clothes">

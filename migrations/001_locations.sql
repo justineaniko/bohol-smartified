@@ -26,3 +26,7 @@ ALTER TABLE items ADD COLUMN location_id INT NULL;
 ALTER TABLE items ADD COLUMN shelf TINYINT NULL;
 ALTER TABLE items ADD CONSTRAINT fk_items_location
   FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL;
+
+-- Brand + size label (e.g. '5 kg', '500 ml')
+ALTER TABLE items ADD COLUMN brand VARCHAR(60) NULL;
+ALTER TABLE items ADD COLUMN pack_size VARCHAR(30) NULL;

@@ -422,3 +422,5 @@ a.location-card:hover { transform: translateY(-2px); }
 .shelf-section h2 { font-size: 1.1rem; margin-bottom: 0.6rem; }
 .empty-shelf { margin: 0; font-size: 0.9rem; }
 .qr-box { margin-top: 2rem; }
+
+.card-size { font-size: 0.8rem; font-weight: 400; }

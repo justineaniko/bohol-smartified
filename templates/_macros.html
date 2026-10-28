@@ -21,10 +21,11 @@
 {% macro item_card(item, categories, back="list", slug=None) %}
   <article class="card {% if item.is_low %}low{% endif %}">
     <header>
-      <a href="{{ url_for('inventory.item_page', item_id=item.id) }}" class="card-title">{{ item.name }}</a>
+      <a href="{{ url_for('inventory.item_page', item_id=item.id) }}" class="card-title">{{ item.name }}{% if item.pack_size %} <span class="muted card-size">{{ item.pack_size }}</span>{% endif %}</a>
       {% if item.is_low %}<span class="badge badge-low">Low</span>{% else %}<span class="badge badge-ok">OK</span>{% endif %}
     </header>
 
+    {% if item.brand %}<p class="muted byline">{{ item.brand }}</p>{% endif %}
     <p class="qty">{{ item.quantity }}</p>
     <div class="meta">
       <span class="chip">{{ categories.get(item.category, item.category) }}</span>

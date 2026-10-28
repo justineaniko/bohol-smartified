@@ -12,8 +12,9 @@
   <article class="item-hero {% if item.is_low %}low{% endif %}">
     <header class="item-hero-head">
       <hgroup>
-        <h1>{{ item.name }}</h1>
+        <h1>{{ item.name }}{% if item.pack_size %} <small class="muted">{{ item.pack_size }}</small>{% endif %}</h1>
         <p>
+          {% if item.brand %}{{ item.brand }} ·{% endif %}
           {{ categories.get(item.category, item.category) }}
           · {% if item.owner_id %}{{ item.owner_name or 'Mine' }} (private){% else %}Shared{% endif %}
           {% if location %}· <a href="{{ url_for('inventory.location_page', slug=location.slug) }}">{{ location_label(item) }}</a>{% endif %}
