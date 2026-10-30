@@ -7,8 +7,8 @@ from db import get_db
 
 bp = Blueprint("inventory", __name__)
 
-CATEGORIES = {"products": "Products", "food": "Food", "clothes": "Clothes", "other": "Other"}
-SEASONS = ["all", "summer", "rainy", "cold"]
+CATEGORIES = {"food": "Food", "drinks": "Drinks", "toiletries": "Toiletries",
+              "cleaning": "Cleaning", "household": "Household", "other": "Other"}
 SORTS = {"name": "Name", "quantity": "Quantity", "expiry": "Expiry date", "newest": "Newest"}
 VISIBLE = "(items.owner_id = %s OR items.owner_id IS NULL)"
 MAX_SHELVES = 10
@@ -77,11 +77,11 @@ def create_item(data, user_id):
         with conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO items (name, brand, pack_size, category, owner_id, quantity, threshold, "
-                "location_id, shelf, expiry_date, size, color, season) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "restock_to, location_id, shelf, expiry_date) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (data["name"], data["brand"], data["pack_size"], data["category"], owner_id,
-                 data["quantity"], data["threshold"], data["location_id"], data["shelf"],
-                 data["expiry_date"], data["size"], data["color"], data["season"]),
+                 data["quantity"], data["threshold"], data["restock_to"], data["location_id"], data["shelf"],
+                 data["expiry_date"]),
             )
             conn.commit()
             return cur.lastrowid
@@ -91,13 +91,13 @@ def update_item(item_id, data, user_id):
     owner_id = user_id if data["private"] else None
     sql = (
         "UPDATE items SET name = %s, brand = %s, pack_size = %s, category = %s, owner_id = %s, "
-        "quantity = %s, threshold = %s, location_id = %s, shelf = %s, expiry_date = %s, "
-        "size = %s, color = %s, season = %s "
+        "quantity = %s, threshold = %s, restock_to = %s, location_id = %s, shelf = %s, "
+        "expiry_date = %s "
         "WHERE id = %s AND " + VISIBLE
     )
     params = (data["name"], data["brand"], data["pack_size"], data["category"], owner_id,
-              data["quantity"], data["threshold"], data["location_id"], data["shelf"],
-              data["expiry_date"], data["size"], data["color"], data["season"],
+              data["quantity"], data["threshold"], data["restock_to"], data["location_id"], data["shelf"],
+              data["expiry_date"],
               item_id, user_id)
     with get_db() as conn:
         with conn.cursor() as cur:
@@ -247,12 +247,10 @@ def _read_item_form():
         "category": f.get("category", ""),
         "quantity": f.get("quantity", type=int),
         "threshold": f.get("threshold", type=int),
+        "restock_to": f.get("restock_to", type=int),
         "location_id": f.get("location_id", type=int),
         "shelf": f.get("shelf", type=int),
         "expiry_date": f.get("expiry_date") or None,
-        "size": f.get("size", "").strip()[:20] or None,
-        "color": f.get("color", "").strip()[:30] or None,
-        "season": f.get("season") if f.get("season") in SEASONS else None,
         "private": f.get("private") == "on",
     }
 
@@ -271,11 +269,6 @@ def _read_item_form():
         return data, "Quantity must be 0 or more."
     if data["threshold"] is None or data["threshold"] < 0:
         return data, "Alert level must be 0 or more."
-    if data["category"] == "clothes":
-        data["expiry_date"] = None
-        data["pack_size"] = None
-    else:
-        data.update(size=None, color=None, season=None)
     return data, None
 
 
@@ -304,7 +297,7 @@ def _back_url(item_id):
 
 def _form_context():
     """Everything item_form.html needs besides the item itself."""
-    return {"categories": CATEGORIES, "seasons": SEASONS,
+    return {"categories": CATEGORIES,
             "locations": list_locations() or [], "max_shelves": MAX_SHELVES}
 
 
@@ -341,7 +334,7 @@ def restock_item(item_id):
 
 @bp.route("/add", methods=["GET", "POST"])
 def add_item():
-    data = {"category": request.args.get("category", "products"), "quantity": 1, "threshold": 0,
+    data = {"category": request.args.get("category", "food"), "quantity": 1, "threshold": 0,
             "location_id": request.args.get("location_id", type=int),
             "shelf": request.args.get("shelf", type=int)}
     if request.method == "POST":

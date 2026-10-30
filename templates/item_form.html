@@ -59,27 +59,12 @@
     </div>
     <small class="hint">Missing a place? <a href="{{ url_for('inventory.locations') }}">Add a location</a></small>
 
-    <div class="cat-fields" data-for="food products other">
-      <div class="grid">
-        <label>Size <span class="muted">(optional)</span>
-          <input name="pack_size" maxlength="30" value="{{ item.pack_size or '' }}" placeholder="5 kg, 500 ml, 12 pcs">
-        </label>
-        <label>Expiry date <span class="muted">(optional)</span>
-          <input type="date" name="expiry_date" value="{{ item.expiry_date or '' }}">
-        </label>
-      </div>
-    </div>
-
-    <div class="cat-fields" data-for="clothes">
-      <div class="grid">
-        <label>Size <input name="size" maxlength="20" value="{{ item.size or '' }}" placeholder="S, M, 8…"></label>
-        <label>Color <input name="color" maxlength="30" value="{{ item.color or '' }}"></label>
-      </div>
-      <label>Season
-        <select name="season">
-          <option value="">—</option>
-          {% for s in seasons %}<option value="{{ s }}" {% if item.season == s %}selected{% endif %}>{{ s|capitalize }}</option>{% endfor %}
-        </select>
+    <div class="grid">
+      <label>Size <span class="muted">(optional)</span>
+        <input name="pack_size" maxlength="30" value="{{ item.pack_size or '' }}" placeholder="5 kg, 500 ml, 12 pcs">
+      </label>
+      <label>Expiry date <span class="muted">(optional)</span>
+        <input type="date" name="expiry_date" value="{{ item.expiry_date or '' }}">
       </label>
     </div>
 
@@ -95,15 +80,6 @@
 
 {% block scripts %}
 <script>
-  const form = document.getElementById('item-form');
-  function syncFields() {
-    const chosen = form.querySelector('input[name="category"]:checked');
-    const cat = chosen ? chosen.value : '';
-    form.querySelectorAll('.cat-fields').forEach(el => { el.hidden = !el.dataset.for.split(' ').includes(cat); });
-  }
-  form.addEventListener('change', syncFields);
-  syncFields();
-
   const locSelect = document.getElementById('location-select');
   const shelfField = document.getElementById('shelf-field');
   const shelfSelect = document.getElementById('shelf-select');

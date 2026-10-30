@@ -48,17 +48,6 @@
     </details>
   </article>
 
-  {% if item.category == 'clothes' and (item.size or item.color or item.season) %}
-    <article>
-      <h3>Details</h3>
-      <dl class="details-list">
-        {% if item.size %}<dt>Size</dt><dd>{{ item.size }}</dd>{% endif %}
-        {% if item.color %}<dt>Color</dt><dd>{{ item.color }}</dd>{% endif %}
-        {% if item.season %}<dt>Season</dt><dd>{{ item.season|capitalize }}</dd>{% endif %}
-      </dl>
-    </article>
-  {% endif %}
-
   <div class="page-actions">
     <a href="{{ url_for('inventory.edit_item', item_id=item.id) }}" role="button" class="outline">Edit</a>
   </div>

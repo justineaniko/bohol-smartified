@@ -21,18 +21,12 @@
     <input type="hidden" name="tab" value="{{ tab }}">
     <input type="search" name="q" value="{{ q }}" placeholder="Search {{ tabs[tab]|lower if tab != 'all' else 'everything' }}…" aria-label="Search">
 
-    {% if tab in ('products', 'food', 'clothes', 'other') %}
+    {% if tab not in ('all', 'books', 'recipes') %}
       <select name="owner" aria-label="Whose">
         <option value="all" {% if filters.owner == 'all' %}selected{% endif %}>Shared + mine</option>
         <option value="shared" {% if filters.owner == 'shared' %}selected{% endif %}>Shared only</option>
         <option value="mine" {% if filters.owner == 'mine' %}selected{% endif %}>Mine only</option>
       </select>
-      {% if tab == 'clothes' %}
-        <select name="season" aria-label="Season">
-          <option value="">Any season</option>
-          {% for s in seasons %}<option value="{{ s }}" {% if season == s %}selected{% endif %}>{{ s|capitalize }}</option>{% endfor %}
-        </select>
-      {% endif %}
       <select name="sort" aria-label="Sort">
         {% for key, label in sorts.items() %}<option value="{{ key }}" {% if filters.sort == key %}selected{% endif %}>Sort: {{ label }}</option>{% endfor %}
       </select>
@@ -86,7 +80,7 @@
       </section>
     {% endfor %}
 
-  {% elif tab in ('products', 'food', 'clothes', 'other') %}
+  {% elif tab not in ('books', 'recipes') %}
     {% if items %}
       <div class="grid-cards">{% for item in items %}{{ m.item_card(item, {tab: tabs[tab]}) }}{% endfor %}</div>
     {% else %}

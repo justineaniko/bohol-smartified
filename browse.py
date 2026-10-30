@@ -14,7 +14,7 @@ bp = Blueprint("browse", __name__)
 
 
 def _tabs():
-    tabs = {"all": "All", "products": "Products", "food": "Food", "clothes": "Clothes", "other": "Other"}
+    tabs = {"all": "All", **inventory.CATEGORIES}
     if has_feature("books"):
         tabs["books"] = "My books"
     tabs["recipes"] = "Recipes"
@@ -35,12 +35,7 @@ def index():
         filters = inventory._filters_from_args()
         filters["category"] = tab
         ctx.update(items=inventory.list_items(user_id, **filters), filters=filters,
-                   sorts=inventory.SORTS, seasons=inventory.SEASONS)
-        if tab == "clothes":
-            season = request.args.get("season")
-            if season in inventory.SEASONS:
-                ctx["items"] = [i for i in ctx["items"] if i.get("season") == season]
-            ctx["season"] = season
+                   sorts=inventory.SORTS)
 
     elif tab == "books":
         status = request.args.get("status")

@@ -29,7 +29,6 @@
       <span class="chip">{{ categories.get(item.category, item.category) }}</span>
       {% if item.owner_id %}<span class="chip chip-private">{{ item.owner_name or 'Mine' }}</span>{% else %}<span class="chip">Shared</span>{% endif %}
       {% set where = location_label(item) %}{% if where and back != "location" %}<span class="chip">📍 {{ where }}</span>{% endif %}
-      {% if item.category == 'clothes' and item.size %}<span class="chip">Size {{ item.size }}</span>{% endif %}
       {{ expiry_badge(item.expiry_date) }}
     </div>
     <small class="muted">Alert at {{ item.threshold }}</small>
