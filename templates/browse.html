@@ -56,6 +56,7 @@
     {% endif %}
 
     <button type="submit">{{ 'Search' if tab == 'all' else 'Filter' }}</button>
+    {% if tab not in ('all', 'books', 'recipes') %}{{ m.view_toggle() }}{% endif %}
     {% if request.args|length > 1 %}<a href="{{ url_for('browse.index', tab=tab) }}" class="clear-link">Clear</a>{% endif %}
   </form>
 
@@ -82,7 +83,7 @@
 
   {% elif tab not in ('books', 'recipes') %}
     {% if items %}
-      <div class="grid-cards">{% for item in items %}{{ m.item_card(item, {tab: tabs[tab]}) }}{% endfor %}</div>
+      <div class="grid-cards" data-viewable>{% for item in items %}{{ m.item_card(item, {tab: tabs[tab]}) }}{% endfor %}</div>
     {% else %}
       {{ m.empty("Nothing in " ~ tabs[tab]|lower ~ (" matches." if request.args|length > 1 else " yet."),
                  url_for('inventory.add_item', category=tab), "+ Add to " ~ tabs[tab]) }}

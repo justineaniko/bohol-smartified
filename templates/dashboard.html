@@ -43,13 +43,14 @@
     </select>
     <label class="inline-check"><input type="checkbox" name="low" value="1" {% if filters.low_only %}checked{% endif %}> Low only</label>
     <button type="submit">Filter</button>
+    {{ m.view_toggle() }}
     {% if filters.q or filters.category or filters.low_only or filters.owner != 'all' or filters.sort != 'name' %}
       <a href="{{ url_for('inventory.dashboard') }}" class="clear-link">Clear</a>
     {% endif %}
   </form>
 
   {% if items %}
-    <div class="grid-cards">
+    <div class="grid-cards" data-viewable>
       {% for item in items %}{{ m.item_card(item, categories) }}{% endfor %}
     </div>
   {% elif filters.q or filters.category or filters.low_only or filters.owner != 'all' %}

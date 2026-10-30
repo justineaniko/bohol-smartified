@@ -4,6 +4,7 @@ import requests
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
 from db import get_db
+import grocery
 
 bp = Blueprint("inventory", __name__)
 
@@ -137,6 +138,7 @@ def check_low_stock(item):
     if is_low and not item["low_stock_alert_sent"]:
         send_discord_alert(f"HELLO! {item['name']} is running low ({item['quantity']} left)")
         set_alert_flag(item["id"], True)
+        grocery.add_low_stock_entry(item)
 
     elif not is_low and item["low_stock_alert_sent"]:
         set_alert_flag(item["id"], False)

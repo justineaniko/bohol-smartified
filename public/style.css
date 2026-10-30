@@ -53,8 +53,9 @@ body, article, .badge, .qty {
 
 .grid-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 0.75rem;
 }
 
 .card { margin: 0; }
@@ -66,9 +67,10 @@ body, article, .badge, .qty {
 .card.low { outline: 1px solid var(--pink); }
 
 .qty {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 700;
-  margin: 0.5rem 0 0;
+  line-height: 1.1;
+  margin: 0.35rem 0 0;
   color: var(--teal);
 }
 .card.low .qty { color: var(--pink); }
@@ -455,3 +457,112 @@ a.location-card:hover { transform: translateY(-2px); }
 .g-hint { margin-top: 1.25rem; }
 
 .med-card footer .med-edit { flex: 0 0 auto; width: auto; margin: 0; padding-inline: 0.8rem; }
+
+.grid-cards > .card,
+.grid-cards > a.recipe-card,
+.grid-cards > a.location-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  padding: 0.85rem 0.9rem;
+  font-size: 0.95rem;
+}
+.grid-cards > .card > footer {
+  margin: auto 0 0;
+  padding: 0.6rem 0 0;
+  background: none;
+  border: 0;
+}
+.grid-cards > .card footer button,
+.grid-cards > .card footer [role="button"] { padding: 0.35rem 0.5rem; }
+.grid-cards > .card > header {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+.grid-cards > .card > header .badge { flex: 0 0 auto; }
+.grid-cards .card-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: auto;
+  font-size: 0.98rem;
+}
+.grid-cards .byline {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.grid-cards .meta {
+  max-height: 3.3rem;
+  overflow: hidden;
+  margin: 0.4rem 0 0.25rem;
+}
+.grid-cards .meta > * {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.grid-cards.as-table .meta > * { max-width: none; }
+
+@media (max-width: 480px) {
+  .grid-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+  .grid-cards > .card,
+  .grid-cards > a.recipe-card,
+  .grid-cards > a.location-card { padding: 0.75rem; }
+  .grid-cards > .card > header { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+}
+
+.view-toggle { width: auto; margin: 0; white-space: nowrap; }
+.actions .view-toggle { padding: 0.45rem 0.8rem; }
+
+.grid-cards.as-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-radius: var(--pico-border-radius);
+  overflow: hidden;
+  background: var(--pico-card-background-color);
+  box-shadow: var(--pico-card-box-shadow);
+}
+.grid-cards.as-table > .card {
+  display: grid;
+  grid-template-columns: minmax(9rem, 2fr) 3.5rem minmax(0, 3fr) auto;
+  grid-template-areas:
+    "title qty meta actions"
+    "byline qty meta actions";
+  align-items: center;
+  column-gap: 1rem;
+  height: auto;
+  padding: 0.55rem 0.9rem;
+  border-radius: 0;
+  box-shadow: none;
+  outline: 0;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+}
+.grid-cards.as-table > .card:last-child { border-bottom: 0; }
+.grid-cards.as-table > .card.low { box-shadow: inset 4px 0 0 var(--pink); }
+.grid-cards.as-table > .card > header { grid-area: title; justify-content: flex-start; margin: 0; padding: 0; background: none; border: 0; }
+.grid-cards.as-table > .card > .byline { grid-area: byline; margin: 0; }
+.grid-cards.as-table > .card > .qty { grid-area: qty; margin: 0; font-size: 1.35rem; text-align: center; }
+.grid-cards.as-table > .card > .meta { grid-area: meta; margin: 0; max-height: none; }
+.grid-cards.as-table > .card > small { display: none; }
+.grid-cards.as-table > .card > footer { grid-area: actions; margin: 0; padding: 0; }
+.grid-cards.as-table > .card footer form { flex: 0 0 auto; }
+.grid-cards.as-table > .card footer button { width: 2.75rem; }
+@media (max-width: 640px) {
+  .grid-cards.as-table > .card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "title qty"
+      "byline qty"
+      "meta actions";
+    row-gap: 0.3rem;
+  }
+}

@@ -46,6 +46,8 @@
   </article>
 {% endmacro %}
 
+{% macro view_toggle() %}<button type="button" class="outline secondary view-toggle" data-view-toggle aria-pressed="false">☰ Table</button>{% endmacro %}
+
 {% macro stars(rating) %}
   {% if rating %}<span class="stars" aria-label="{{ rating }} out of 5">{{ '★' * rating }}{{ '☆' * (5 - rating) }}</span>{% endif %}
 {% endmacro %}

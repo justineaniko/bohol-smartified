@@ -69,6 +69,29 @@
       updateIcon();
     });
   </script>
+  <script>
+    (() => {
+      const lists = document.querySelectorAll('[data-viewable]');
+      const buttons = document.querySelectorAll('[data-view-toggle]');
+      if (!buttons.length) return;
+      let view = 'cards';
+      try { view = localStorage.getItem('view') || 'cards'; } catch (e) {}
+      function apply() {
+        const table = view === 'table';
+        lists.forEach(el => el.classList.toggle('as-table', table));
+        buttons.forEach(b => {
+          b.setAttribute('aria-pressed', table);
+          b.textContent = table ? '▦ Cards' : '☰ Table';
+        });
+      }
+      buttons.forEach(b => b.addEventListener('click', () => {
+        view = view === 'table' ? 'cards' : 'table';
+        try { localStorage.setItem('view', view); } catch (e) {}
+        apply();
+      }));
+      apply();
+    })();
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

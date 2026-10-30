@@ -10,7 +10,10 @@
       <h1>{{ location.name }}</h1>
       <p>{{ items|length }} item{{ '' if items|length == 1 else 's' }}{% if location.shelf_count %} · {{ location.shelf_count }} shelves{% endif %}</p>
     </hgroup>
-    <a href="{{ url_for('inventory.add_item', location_id=location.id) }}" role="button">+ Add item here</a>
+    <div class="actions">
+      {{ m.view_toggle() }}
+      <a href="{{ url_for('inventory.add_item', location_id=location.id) }}" role="button">+ Add item here</a>
+    </div>
   </header>
 
   {% set low = items | selectattr('is_low') | list %}
@@ -27,7 +30,7 @@
         </div>
       {% endif %}
       {% if shelf_items %}
-        <div class="grid-cards">
+        <div class="grid-cards" data-viewable>
           {% for item in shelf_items %}{{ m.item_card(item, categories, back="location", slug=location.slug) }}{% endfor %}
         </div>
       {% elif location.shelf_count %}
