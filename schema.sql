@@ -56,9 +56,19 @@ CREATE TABLE IF NOT EXISTS medicine (
   id                  INT AUTO_INCREMENT PRIMARY KEY,
   name                VARCHAR(100) NOT NULL,
   generic_name        VARCHAR(100) NOT NULL,
-  opened_on           DATE         NULL,
-  strength            
-)
+  strength            VARCHAR(30) NULL,
+  owner_id            INT NULL,
+  quantity            INT NOT NULL DEFAULT 0,
+  threshold           INT NOT NULL DEFAULT 0,
+  low_stock_alert_sent BOOLEAN NOT NULL DEFAULT FALSE,
+  location_id         INT NULL,
+  shelf               TINYINT NULL,
+  expiry_date         DATE NULL,
+  opened_on           DATE NULL,
+  created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL
+);
 
 CREATE TABLE IF NOT EXISTS books (
   id          INT AUTO_INCREMENT PRIMARY KEY,

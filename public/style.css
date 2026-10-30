@@ -446,14 +446,40 @@ a.location-card:hover { transform: translateY(-2px); }
 
 .g-actions { display: flex; gap: 0.4rem; align-items: center; flex: 0 0 auto; }
 .g-actions form { margin: 0; }
-.g-bought { display: flex; gap: 0.4rem; }
-.g-bought input { width: 5.5rem; margin: 0; padding: 0.4rem 0.6rem; }
+.g-bought { position: relative; margin: 0; }
+.g-bought > summary { list-style: none; margin: 0; padding: 0.4rem 0.8rem; width: auto; white-space: nowrap; }
+.g-bought > summary::-webkit-details-marker { display: none; }
+.g-bought > summary::after { display: none; }
+.g-bought[open] > summary::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(10, 8, 18, 0.55);
+  cursor: default;
+}
+.g-bought-form {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 21;
+  display: grid;
+  gap: 0.6rem;
+  width: min(18rem, calc(100vw - 2rem));
+  padding: 0.85rem;
+  background: var(--pico-card-background-color);
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+  box-shadow: var(--pico-card-box-shadow);
+}
+.g-bought-form label { margin: 0; font-size: 0.9rem; }
+.g-bought-form input { margin: 0.3rem 0 0; }
+.g-bought-form button { width: 100%; }
 .g-actions button { width: auto; margin: 0; padding: 0.4rem 0.8rem; white-space: nowrap; }
 @media (max-width: 480px) {
-  .g-actions { flex: 1 1 100%; }
-  .g-bought { flex: 1; }
-  .g-bought input { flex: 1; width: auto; }
-}
+  .g-actions { flex: 1 1 100%; justify-content: flex-end; }
+  }
 .g-hint { margin-top: 1.25rem; }
 
 .med-card footer .med-edit { flex: 0 0 auto; width: auto; margin: 0; padding-inline: 0.8rem; }

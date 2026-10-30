@@ -27,15 +27,26 @@
     </div>
 
     <div class="g-actions">
-      <form method="post" action="{{ url_for('grocery.bought', id=entry.id) }}" class="g-bought">
-        {{ m.csrf() }}
-        {% if linked %}
-          <input type="number" name="amount" min="1" max="99999" inputmode="numeric"
-                 placeholder="{{ '+' ~ need if need is not none and need > 0 else 'How many' }}"
-                 aria-label="How many {{ entry.name }} you bought">
-        {% endif %}
-        <button type="submit">✓ Bought</button>
-      </form>
+      {% if linked %}
+        <details class="g-bought">
+          <summary role="button">✓ Bought</summary>
+          <form method="post" action="{{ url_for('grocery.bought', id=entry.id) }}" class="g-bought-form">
+            {{ m.csrf() }}
+            <strong>{{ entry.name }}</strong>
+            <label>How many did you buy?
+              <input type="number" name="amount" min="1" max="99999" inputmode="numeric" required
+                     value="{{ need if need is not none and need > 0 else 1 }}">
+            </label>
+            {% if entry.restock_to is not none %}<small class="muted">Refill to {{ entry.restock_to }} · have {{ entry.quantity }}</small>{% endif %}
+            <button type="submit">Add to stock</button>
+          </form>
+        </details>
+      {% else %}
+        <form method="post" action="{{ url_for('grocery.bought', id=entry.id) }}">
+          {{ m.csrf() }}
+          <button type="submit">✓ Bought</button>
+        </form>
+      {% endif %}
       <form method="post" action="{{ url_for('grocery.remove', id=entry.id) }}" class="g-remove">
         {{ m.csrf() }}
         <button type="submit" class="outline secondary" aria-label="Remove {{ entry.name }} from the list">✕</button>
@@ -83,5 +94,5 @@
     {{ grocery_section("My list", "Only you can see this", my_list, "Your list is empty.") }}
   </div>
 
-  <small class="hint g-hint">Bought with the box empty refills the item to its “Refill to” amount. Type a number to add exactly that many.</small>
+  <small class="hint g-hint">Bought asks how many you got, filled in with what it takes to reach “Refill to”. Items not in inventory are just crossed off.</small>
 {% endblock %}

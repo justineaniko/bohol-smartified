@@ -34,6 +34,7 @@
       <div class="section-tabs" role="navigation" aria-label="Sections">
         <a href="{{ url_for('inventory.dashboard') }}" {% if section == 'inventory' %}aria-current="page"{% endif %}>Supplies</a>
         <a href="{{ url_for('grocery.index') }}" {% if section == 'grocery' %}aria-current="page"{% endif %}>Grocery</a>
+        <a href="{{ url_for('medicine.index') }}" {% if section == 'medicine' %}aria-current="page"{% endif %}>Medicine</a>
         <a href="{{ url_for('browse.index') }}" {% if section == 'browse' %}aria-current="page"{% endif %}>Browse</a>
         <a href="{{ url_for('recipes.index') }}" {% if section == 'recipes' %}aria-current="page"{% endif %}>Recipes</a>
         {% if has_feature('books') %}
