@@ -10,6 +10,8 @@ import auth
 import books
 import browse
 import inventory
+import grocery
+import medicine
 import recipes
 
 app = Flask(__name__, static_folder="public", static_url_path="")
@@ -30,7 +32,8 @@ app.register_blueprint(inventory.bp)
 app.register_blueprint(browse.bp)
 app.register_blueprint(recipes.bp)
 app.register_blueprint(books.bp)
-
+app.register_blueprint(grocery.bp)
+app.register_blueprint(medicine.bp)
 
 @app.context_processor
 def inject_today():
