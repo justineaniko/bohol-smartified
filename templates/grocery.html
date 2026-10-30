@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Grocery list · Bohol House{% endblock %}
+
+{% macro grocery_entry(entry) %}
+  {% set linked = entry.item_id is not none %}
+  {% set need = (entry.restock_to - entry.quantity) if linked and entry.restock_to is not none else none %}
+  <li class="g-entry {% if entry.auto_added %}g-auto{% endif %}">
+    <div class="g-main">
+      <div class="g-name">
+        {% if linked %}
+          <a href="{{ url_for('inventory.item_page', item_id=entry.item_id) }}" class="card-title">{{ entry.name }}</a>
+        {% else %}
+          <span class="card-title">{{ entry.name }}</span>
+        {% endif %}
+        {% if linked and entry.pack_size %}<span class="muted card-size">{{ entry.pack_size }}</span>{% endif %}
+      </div>
+      <div class="meta">
+        {% if entry.auto_added %}<span class="chip chip-auto">Low stock</span>{% endif %}
+        {% if linked and entry.brand %}<span class="chip">{{ entry.brand }}</span>{% endif %}
+        {% if linked %}
+          <span class="chip chip-accent">Have {{ entry.quantity }}{% if entry.restock_to is not none %} · refill to {{ entry.restock_to }}{% endif %}</span>
+        {% else %}
+          <span class="chip">Not in inventory</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="g-actions">
+      <form method="post" action="{{ url_for('grocery.bought', id=entry.id) }}" class="g-bought">
+        {{ m.csrf() }}
+        {% if linked %}
+          <input type="number" name="amount" min="1" max="99999" inputmode="numeric"
+                 placeholder="{{ '+' ~ need if need is not none and need > 0 else 'How many' }}"
+                 aria-label="How many {{ entry.name }} you bought">
+        {% endif %}
+        <button type="submit">✓ Bought</button>
+      </form>
+      <form method="post" action="{{ url_for('grocery.remove', id=entry.id) }}" class="g-remove">
+        {{ m.csrf() }}
+        <button type="submit" class="outline secondary" aria-label="Remove {{ entry.name }} from the list">✕</button>
+      </form>
+    </div>
+  </li>
+{% endmacro %}
+
+{% macro grocery_section(title, subtitle, entries, empty_msg) %}
+  <section class="g-section">
+    <div class="section-head">
+      <h2>{{ title }} <span class="count">{{ entries|length }}</span></h2>
+      <small class="muted">{{ subtitle }}</small>
+    </div>
+    {% if entries %}
+      <ul class="g-list">{% for e in entries %}{{ grocery_entry(e) }}{% endfor %}</ul>
+    {% else %}
+      <div class="empty"><p>{{ empty_msg }}</p></div>
+    {% endif %}
+  </section>
+{% endmacro %}
+
+{% block content %}
+  <header class="top">
+    <hgroup>
+      <h1>Grocery list</h1>
+      <p>Low-stock supplies show up here on their own</p>
+    </hgroup>
+  </header>
+
+  <form method="post" action="{{ url_for('grocery.add') }}" class="form-card g-add">
+    {{ m.csrf() }}
+    <div class="g-add-row">
+      <input name="name" maxlength="100" required placeholder="Add something, e.g. Eggs" aria-label="Item to buy">
+      <button type="submit">Add</button>
+    </div>
+    <label class="inline-check">
+      <input type="checkbox" name="private" role="switch">
+      Just for me
+    </label>
+  </form>
+
+  <div class="g-columns">
+    {{ grocery_section("House list", "Everyone can see this", shared_list, "Nothing to buy for the house.") }}
+    {{ grocery_section("My list", "Only you can see this", my_list, "Your list is empty.") }}
+  </div>
+
+  <small class="hint g-hint">Bought with the box empty refills the item to its “Refill to” amount. Type a number to add exactly that many.</small>
+{% endblock %}

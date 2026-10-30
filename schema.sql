@@ -46,14 +46,19 @@ CREATE TABLE IF NOT EXISTS items (
   location_id          INT          NULL,
   shelf                TINYINT      NULL,
   expiry_date          DATE         NULL,
-  size                 VARCHAR(20)  NULL,
-  color                VARCHAR(30)  NULL,
-  season               VARCHAR(20)  NULL,
   notes                TEXT         NULL,
   created_at           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL,
   FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL
 );
+
+CREATE TABLE IF NOT EXISTS medicine (
+  id                  INT AUTO_INCREMENT PRIMARY KEY,
+  name                VARCHAR(100) NOT NULL,
+  generic_name        VARCHAR(100) NOT NULL,
+  opened_on           DATE         NULL,
+  strength            
+)
 
 CREATE TABLE IF NOT EXISTS books (
   id          INT AUTO_INCREMENT PRIMARY KEY,

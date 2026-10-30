@@ -2,5 +2,3 @@ import qrcode
 import os
 
 
-
-

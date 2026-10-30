@@ -1,8 +1,7 @@
-/* ---------- Dark: lavender + teal on a night-sky background ---------- */
 :root[data-theme="dark"] {
   --pico-background-color: #13111c;
   --pico-card-background-color: #1d1a2b;
-  --pico-primary: #b9a7ff;            /* lavender */
+  --pico-primary: #b9a7ff;
   --pico-primary-background: #b9a7ff;
   --pico-primary-hover-background: #cdbfff;
   --pico-primary-inverse: #13111c;
@@ -12,11 +11,10 @@
   --pink-soft: rgba(244, 169, 196, 0.15);
 }
 
-/* ---------- Light: soft lilac paper, deeper accents for contrast ---------- */
 :root[data-theme="light"] {
   --pico-background-color: #f7f4ff;
   --pico-card-background-color: #ffffff;
-  --pico-primary: #6d55d9;            /* deeper lavender so text stays readable */
+  --pico-primary: #6d55d9;
   --pico-primary-background: #6d55d9;
   --pico-primary-hover-background: #5a43c4;
   --pico-primary-inverse: #ffffff;
@@ -28,7 +26,6 @@
 
 :root { --pico-border-radius: 14px; }
 
-/* Smooth switch between themes */
 body, article, .badge, .qty {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
@@ -37,7 +34,7 @@ body, article, .badge, .qty {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;          /* buttons drop below the title on narrow phones */
+  flex-wrap: wrap;
   gap: 1rem;
   margin-block: 1.5rem;
 }
@@ -54,7 +51,6 @@ body, article, .badge, .qty {
   border-left: 4px solid var(--pink);
 }
 
-/* Responsive card grid: 1 column on phones, more on iPad/laptop */
 .grid-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -92,16 +88,14 @@ body, article, .badge, .qty {
 .badge-ok  { background: var(--teal-soft); color: var(--teal); }
 .badge-low { background: var(--pink-soft); color: var(--pink); }
 
-/* ---------- Navigation ---------- */
 .brand {
   font-weight: 700;
   color: var(--pico-primary);
   text-decoration: none;
 }
-nav form { margin: 0; }
-nav button { margin: 0; padding: 0.35rem 0.8rem; }
+.top-nav form { margin: 0; }
+.top-nav button { margin: 0; padding: 0.35rem 0.8rem; }
 
-/* ---------- Messages ---------- */
 .flash {
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
@@ -109,7 +103,6 @@ nav button { margin: 0; padding: 0.35rem 0.8rem; }
 }
 .flash-error { border-left-color: var(--pink); }
 
-/* ---------- Sign-in pages ---------- */
 .auth-card {
   max-width: 420px;
   margin: 2rem auto;
@@ -128,7 +121,6 @@ nav button { margin: 0; padding: 0.35rem 0.8rem; }
   color: var(--pico-muted-color);
 }
 
-/* ---------- Recovery codes ---------- */
 .codes {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -152,21 +144,20 @@ nav button { margin: 0; padding: 0.35rem 0.8rem; }
 .code-actions button, .code-actions [role="button"] { margin: 0; width: auto; }
 
 .account-section { margin-bottom: 1.5rem; }
+.sign-out { margin: 2rem 0; text-align: center; }
+.sign-out form { margin: 0; }
+.sign-out button { width: auto; margin: 0; padding: 0.5rem 2rem; }
 
-/* =====================================================================
-   App sections (added for Browse / Books / Recipes)
-   ===================================================================== */
 :root[data-theme="dark"]  { --amber: #f3c98b; --amber-soft: rgba(243, 201, 139, 0.15); }
 :root[data-theme="light"] { --amber: #a0620f; --amber-soft: rgba(160, 98, 15, 0.12); }
 
 .muted { color: var(--pico-muted-color); }
 .center { text-align: center; }
 .pre-line { white-space: pre-line; }
-.icon-btn { padding: 0.35rem 0.6rem; }
+.top-nav .icon-btn { padding: 0.35rem 0.6rem; }
 .who { font-weight: 600; }
 .top-nav { flex-wrap: wrap; }
 
-/* Section tabs under the top bar: scroll sideways on small phones */
 .section-tabs {
   display: flex;
   gap: 0.25rem;
@@ -190,7 +181,6 @@ nav button { margin: 0; padding: 0.35rem 0.8rem; }
   font-weight: 600;
 }
 
-/* Pill tabs inside a page (Browse, Books, Recipes) */
 .tabs {
   display: flex;
   gap: 0.4rem;
@@ -226,7 +216,6 @@ nav button { margin: 0; padding: 0.35rem 0.8rem; }
   color: var(--pico-color);
 }
 
-/* Filter bar: wraps onto several lines on phones */
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -241,7 +230,6 @@ nav button { margin: 0; padding: 0.35rem 0.8rem; }
 .inline-check input { margin: 0; }
 .clear-link { font-size: 0.9rem; }
 
-/* Chips and badges */
 .meta { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0; }
 .chip {
   display: inline-block;
@@ -259,7 +247,6 @@ nav button { margin: 0; padding: 0.35rem 0.8rem; }
 .badge-warn  { background: var(--amber-soft); color: var(--amber); }
 .badge-muted { background: var(--pico-muted-border-color); color: var(--pico-muted-color); }
 
-/* Cards */
 .card-title {
   font-weight: 600;
   color: var(--pico-color);
@@ -288,7 +275,6 @@ a.recipe-card:hover { transform: translateY(-2px); }
 .tag-line { display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.8rem; color: var(--pico-muted-color); }
 .tag-line a { color: var(--pico-muted-color); }
 
-/* Empty states */
 .empty {
   text-align: center;
   padding: 2.5rem 1rem;
@@ -298,12 +284,10 @@ a.recipe-card:hover { transform: translateY(-2px); }
 }
 .empty [role="button"] { width: auto; }
 
-/* Browse "All" sections */
 .browse-section { margin-bottom: 2rem; }
 .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
 .section-head h2 { font-size: 1.25rem; margin-bottom: 0.75rem; }
 
-/* Item page */
 .back-link { display: inline-block; margin-bottom: 1rem; font-size: 0.9rem; }
 .item-hero.low { outline: 1px solid var(--pink); }
 .item-hero-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
@@ -323,7 +307,6 @@ a.recipe-card:hover { transform: translateY(-2px); }
 .page-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
 .page-actions [role="button"] { width: auto; }
 
-/* Delete with a second click */
 .danger-zone { margin-top: 1rem; }
 .danger-zone summary { color: var(--pink); }
 .danger-zone button.danger {
@@ -333,7 +316,6 @@ a.recipe-card:hover { transform: translateY(-2px); }
   width: auto;
 }
 
-/* Forms */
 .form-card {
   padding: var(--pico-block-spacing-vertical) var(--pico-block-spacing-horizontal);
   background: var(--pico-card-background-color);
@@ -362,7 +344,6 @@ a.recipe-card:hover { transform: translateY(-2px); }
 .rating-input label:first-child { color: var(--pico-muted-color); }
 [hidden] { display: none !important; }
 
-/* Books */
 .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
 .stat {
   display: flex;
@@ -375,7 +356,6 @@ a.recipe-card:hover { transform: translateY(-2px); }
 .stat-num { font-size: 1.75rem; font-weight: 700; color: var(--teal); }
 .stat-label { font-size: 0.8rem; color: var(--pico-muted-color); }
 
-/* Recipe page */
 .recipe-head { margin-bottom: 1.5rem; }
 .recipe-head h1 { margin-bottom: 0.5rem; }
 .recipe-body { display: grid; grid-template-columns: 1fr; gap: 1rem; }
@@ -388,7 +368,6 @@ a.recipe-card:hover { transform: translateY(-2px); }
 .checklist label:has(input:checked) { color: var(--pico-muted-color); text-decoration: line-through; }
 .steps li { margin-bottom: 0.6rem; line-height: 1.55; }
 
-/* Admin table */
 .table-wrap { overflow-x: auto; }
 .toggle-form { margin: 0; }
 button.on {
@@ -396,12 +375,17 @@ button.on {
   border-color: var(--teal);
   color: var(--pico-background-color);
 }
+.manage-cell { min-width: 14rem; }
+.manage { margin: 0 0 0.4rem; }
+.manage summary { margin: 0; }
+.manage form { display: grid; gap: 0.4rem; margin: 0.5rem 0 0; }
+.manage input { margin: 0; }
+.danger-note { font-size: 0.85rem; color: var(--pico-del-color); margin: 0; }
+button.danger { background: var(--pico-del-color); border-color: var(--pico-del-color); color: #fff; }
 
-/* Error pages */
 .error-code { font-size: 3.5rem; font-weight: 700; color: var(--pico-primary); margin: 0; }
 .auth-card.center [role="button"] { width: auto; }
 
-/* ---------- Locations (one QR per place) ---------- */
 a.location-card {
   display: flex;
   flex-direction: column;
@@ -424,3 +408,50 @@ a.location-card:hover { transform: translateY(-2px); }
 .qr-box { margin-top: 2rem; }
 
 .card-size { font-size: 0.8rem; font-weight: 400; }
+
+.g-add { margin-bottom: 1.5rem; }
+.g-add-row { display: flex; gap: 0.5rem; }
+.g-add-row input { flex: 1; margin: 0; }
+.g-add-row button { width: auto; margin: 0; }
+.g-add .inline-check { margin-top: 0.75rem; }
+
+.g-columns { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+@media (min-width: 900px) {
+  .g-columns { grid-template-columns: 1fr 1fr; }
+}
+.g-section .section-head { flex-wrap: wrap; }
+.g-section h2 .count { vertical-align: middle; }
+
+.g-list { padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.g-entry {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--pico-card-background-color);
+  border-radius: var(--pico-border-radius);
+  box-shadow: var(--pico-card-box-shadow);
+  border-left: 4px solid transparent;
+}
+.g-entry.g-auto { border-left-color: var(--pink); }
+.g-main { flex: 1 1 12rem; min-width: 0; }
+.g-name { display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; }
+.g-main .meta { margin: 0.35rem 0 0; }
+.chip-auto { background: var(--pink-soft); color: var(--pink); }
+
+.g-actions { display: flex; gap: 0.4rem; align-items: center; flex: 0 0 auto; }
+.g-actions form { margin: 0; }
+.g-bought { display: flex; gap: 0.4rem; }
+.g-bought input { width: 5.5rem; margin: 0; padding: 0.4rem 0.6rem; }
+.g-actions button { width: auto; margin: 0; padding: 0.4rem 0.8rem; white-space: nowrap; }
+@media (max-width: 480px) {
+  .g-actions { flex: 1 1 100%; }
+  .g-bought { flex: 1; }
+  .g-bought input { flex: 1; width: auto; }
+}
+.g-hint { margin-top: 1.25rem; }
+
+.med-card footer .med-edit { flex: 0 0 auto; width: auto; margin: 0; padding-inline: 0.8rem; }

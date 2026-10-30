@@ -5,17 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Bohol House{% endblock %}</title>
 
-  <!-- Pico.css: makes plain HTML look clean with almost no classes -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  <!-- Your own styles, from the public/ folder -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
   <script>
-    // Runs before the page draws, so there's no flash of the wrong theme.
     try {
       const saved = localStorage.getItem('theme');
       if (saved) document.documentElement.dataset.theme = saved;
-    } catch (e) { /* storage blocked: stay on dark */ }
+    } catch (e) {}
   </script>
 </head>
 <body>
@@ -27,23 +24,16 @@
       <li><button id="theme-toggle" class="outline secondary icon-btn" aria-label="Toggle light/dark mode">☀️</button></li>
       {% if g.user %}
         <li><a href="{{ url_for('auth.account') }}" class="who">{{ g.user.display_name }}</a></li>
-        <li>
-          {# Sign out is a POST form, so a link on another site can't sign you out #}
-          <form method="post" action="{{ url_for('auth.logout') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="outline secondary">Sign out</button>
-          </form>
-        </li>
       {% endif %}
     </ul>
   </nav>
 
   {% if g.user %}
-    {# Section tabs. Plain links: the server decides what each page shows. #}
     {% set section = (request.endpoint or '').split('.')[0] %}
     <div class="container">
       <div class="section-tabs" role="navigation" aria-label="Sections">
         <a href="{{ url_for('inventory.dashboard') }}" {% if section == 'inventory' %}aria-current="page"{% endif %}>Supplies</a>
+        <a href="{{ url_for('grocery.index') }}" {% if section == 'grocery' %}aria-current="page"{% endif %}>Grocery</a>
         <a href="{{ url_for('browse.index') }}" {% if section == 'browse' %}aria-current="page"{% endif %}>Browse</a>
         <a href="{{ url_for('recipes.index') }}" {% if section == 'recipes' %}aria-current="page"{% endif %}>Recipes</a>
         {% if has_feature('books') %}
@@ -67,7 +57,6 @@
   </main>
 
   <script>
-    // Theme toggle: flips data-theme on <html> and remembers the choice
     const root = document.documentElement;
     const toggle = document.getElementById('theme-toggle');
     function updateIcon() {

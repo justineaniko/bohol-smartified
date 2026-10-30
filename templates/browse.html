@@ -10,7 +10,6 @@
     </hgroup>
   </header>
 
-  {# Tabs are plain links (?tab=...). The server decides what each tab shows and who may see it. #}
   <div class="tabs" role="tablist" aria-label="What to browse">
     {% for key, label in tabs.items() %}
       <a role="tab" href="{{ url_for('browse.index', tab=key, q=q or None) }}"
@@ -18,7 +17,6 @@
     {% endfor %}
   </div>
 
-  {# ---------- Filters for the current tab ---------- #}
   <form method="get" class="filter-bar">
     <input type="hidden" name="tab" value="{{ tab }}">
     <input type="search" name="q" value="{{ q }}" placeholder="Search {{ tabs[tab]|lower if tab != 'all' else 'everything' }}…" aria-label="Search">
@@ -67,7 +65,6 @@
     {% if request.args|length > 1 %}<a href="{{ url_for('browse.index', tab=tab) }}" class="clear-link">Clear</a>{% endif %}
   </form>
 
-  {# ---------- Results ---------- #}
   {% if tab == 'all' %}
     {% for key, label, kind, results in sections %}
       <section class="browse-section">

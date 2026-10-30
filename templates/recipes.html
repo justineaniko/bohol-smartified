@@ -11,7 +11,6 @@
     <a href="{{ url_for('recipes.add') }}" role="button">+ Add recipe</a>
   </header>
 
-  {# Meal tabs keep the other filters #}
   <div class="tabs" role="tablist" aria-label="Meal">
     <a role="tab" href="{{ url_for('recipes.index', q=filters.q or None, time=filters.max_minutes, tag=filters.tag, sort=filters.sort) }}"
        {% if not filters.meal_type %}aria-selected="true" aria-current="page"{% endif %}>All</a>

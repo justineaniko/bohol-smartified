@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Medicine · Bohol House{% endblock %}
+
+{% macro med_card(med) %}
+  {% set is_low = med.quantity <= med.threshold %}
+  {% set days = (med.expiry_date - today).days if med.expiry_date else none %}
+  {% set expired = days is not none and days < 0 %}
+  <article class="card med-card {% if is_low or expired %}low{% endif %}">
+    <header>
+      <span class="card-title">{{ med.name }}{% if med.strength %} <span class="muted card-size">{{ med.strength }}</span>{% endif %}</span>
+      {% if expired %}<span class="badge badge-low">Expired</span>
+      {% elif is_low %}<span class="badge badge-low">Low</span>
+      {% else %}<span class="badge badge-ok">OK</span>{% endif %}
+    </header>
+
+    {% if med.generic_name and med.generic_name != med.name %}<p class="muted byline">{{ med.generic_name }}</p>{% endif %}
+    <p class="qty">{{ med.quantity }}</p>
+    <div class="meta">
+      {% if med.owner_id %}<span class="chip chip-private">{{ med.owner_name or 'Mine' }}</span>{% else %}<span class="chip">Shared</span>{% endif %}
+      {% set where = location_label(med) %}{% if where %}<span class="chip">📍 {{ where }}</span>{% endif %}
+      {% if med.opened_on %}<span class="chip">Opened {{ med.opened_on.strftime('%b %-d') }}</span>{% endif %}
+      {% if not expired %}{{ m.expiry_badge(med.expiry_date) }}{% endif %}
+    </div>
+    <small class="muted">Alert at {{ med.threshold }}</small>
+
+    <footer>
+      <form method="post" action="{{ url_for('medicine.use', med_id=med.id) }}">
+        {{ m.csrf() }}
+        <button type="submit" class="outline" aria-label="Use one {{ med.name }}">−1</button>
+      </form>
+      <form method="post" action="{{ url_for('medicine.restock', med_id=med.id) }}">
+        {{ m.csrf() }}
+        <button type="submit" aria-label="Add one {{ med.name }}">+1</button>
+      </form>
+      <a href="{{ url_for('medicine.edit', med_id=med.id) }}" role="button" class="outline secondary med-edit" aria-label="Edit {{ med.name }}">Edit</a>
+    </footer>
+  </article>
+{% endmacro %}
+
+{% block content %}
+  {% set filtered = filters.q or filters.low_only or filters.expiring or filters.owner != 'all' %}
+  <header class="top">
+    <hgroup>
+      <h1>Medicine</h1>
+      <p>{{ medicines|length }} medicine{{ '' if medicines|length == 1 else 's' }}{% if filtered %} matching{% endif %}</p>
+    </hgroup>
+    <div class="actions">
+      <a href="{{ url_for('medicine.add') }}" role="button">+ Add medicine</a>
+    </div>
+  </header>
+
+  {% set expired_list = [] %}{% set low_list = [] %}
+  {% for med in medicines %}
+    {% if med.expiry_date and med.expiry_date < today %}{% set _ = expired_list.append(med.name) %}
+    {% elif med.quantity <= med.threshold %}{% set _ = low_list.append(med.name) %}{% endif %}
+  {% endfor %}
+
+  {% if expired_list and not filtered %}
+    <article class="alert">
+      <strong>{{ expired_list|length }} expired:</strong> {{ expired_list | join(', ') }}
+      · <a href="{{ url_for('medicine.index', expiring='1') }}">Show expiring</a>
+    </article>
+  {% endif %}
+  {% if low_list and not filtered %}
+    <article class="alert">
+      <strong>{{ low_list|length }} running low:</strong> {{ low_list | join(', ') }}
+      · <a href="{{ url_for('medicine.index', low='1') }}">Show only these</a>
+    </article>
+  {% endif %}
+
+  <form method="get" class="filter-bar">
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search name or generic…" aria-label="Search">
+    <select name="owner" aria-label="Whose">
+      <option value="all" {% if filters.owner == 'all' %}selected{% endif %}>Shared + mine</option>
+      <option value="shared" {% if filters.owner == 'shared' %}selected{% endif %}>Shared only</option>
+      <option value="mine" {% if filters.owner == 'mine' %}selected{% endif %}>Mine only</option>
+    </select>
+    <select name="sort" aria-label="Sort">
+      {% for key, label in sorts.items() %}
+        <option value="{{ key }}" {% if filters.sort == key %}selected{% endif %}>Sort: {{ label }}</option>
+      {% endfor %}
+    </select>
+    <label class="inline-check"><input type="checkbox" name="low" value="1" {% if filters.low_only %}checked{% endif %}> Low only</label>
+    <label class="inline-check"><input type="checkbox" name="expiring" value="1" {% if filters.expiring %}checked{% endif %}> Expiring soon</label>
+    <button type="submit">Filter</button>
+    {% if filtered or filters.sort != 'name' %}
+      <a href="{{ url_for('medicine.index') }}" class="clear-link">Clear</a>
+    {% endif %}
+  </form>
+
+  {% if medicines %}
+    <div class="grid-cards">
+      {% for med in medicines %}{{ med_card(med) }}{% endfor %}
+    </div>
+  {% elif filtered %}
+    {{ m.empty("Nothing matches those filters.", url_for('medicine.index'), "Clear filters") }}
+  {% else %}
+    {{ m.empty("No medicine yet. Add the first one.", url_for('medicine.add'), "+ Add medicine") }}
+  {% endif %}
+{% endblock %}

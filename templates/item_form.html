@@ -33,7 +33,11 @@
       <label>Alert when at or below
         <input type="number" name="threshold" min="0" max="99999" value="{{ item.threshold if item.threshold is not none else 0 }}" required>
       </label>
+      <label>Refill to <span class="muted">(optional)</span>
+        <input type="number" name="restock_to" min="0" max="99999" value="{{ item.restock_to if item.restock_to is not none else '' }}" placeholder="e.g. 6">
+      </label>
     </div>
+    <small class="hint">“Refill to” is how many you usually keep. Marking it bought on the grocery list tops it back up to this.</small>
 
     <div class="grid">
       <label>Where is it kept? <span class="muted">(optional)</span>
@@ -44,7 +48,6 @@
           {% endfor %}
         </select>
       </label>
-      {# Only shown when the chosen location has shelves; extra shelf numbers are hidden too #}
       <label id="shelf-field">Shelf
         <select name="shelf" id="shelf-select">
           <option value="">—</option>
@@ -56,7 +59,6 @@
     </div>
     <small class="hint">Missing a place? <a href="{{ url_for('inventory.locations') }}">Add a location</a></small>
 
-    {# Shown for everything except clothes. Plain show/hide only; the server checks everything again. #}
     <div class="cat-fields" data-for="food products other">
       <div class="grid">
         <label>Size <span class="muted">(optional)</span>
@@ -81,10 +83,6 @@
       </label>
     </div>
 
-    <label>Notes <span class="muted">(optional)</span>
-      <textarea name="notes" rows="3" maxlength="2000">{{ item.notes or '' }}</textarea>
-    </label>
-
     <label>
       <input type="checkbox" name="private" role="switch" {% if item.private %}checked{% endif %}>
       Private: only I can see this
@@ -97,7 +95,6 @@
 
 {% block scripts %}
 <script>
-  // Show only the fields that fit the chosen category (clothes: size/color/season; others: expiry)
   const form = document.getElementById('item-form');
   function syncFields() {
     const chosen = form.querySelector('input[name="category"]:checked');
@@ -107,7 +104,6 @@
   form.addEventListener('change', syncFields);
   syncFields();
 
-  // Shelf picker: hide it for places without shelves, and hide shelf numbers the place doesn't have
   const locSelect = document.getElementById('location-select');
   const shelfField = document.getElementById('shelf-field');
   const shelfSelect = document.getElementById('shelf-select');

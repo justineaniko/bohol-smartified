@@ -5,7 +5,7 @@ import certifi
 import pymysql
 from dotenv import load_dotenv
 
-load_dotenv()  # reads secrets from the .env file into os.environ
+load_dotenv()
 
 DB_CONFIG = {
     "host": os.environ.get("DB_HOST"),
@@ -13,8 +13,8 @@ DB_CONFIG = {
     "user": os.environ.get("DB_USER"),
     "password": os.environ.get("DB_PASSWORD"),
     "database": os.environ.get("DB_NAME", "supplies_tracker"),
-    "cursorclass": pymysql.cursors.DictCursor,  # rows come back as dicts
-    "ssl": {"ca": certifi.where()},  # TiDB requires an encrypted connection
+    "cursorclass": pymysql.cursors.DictCursor,
+    "ssl": {"ca": certifi.where()},
 }
 
 

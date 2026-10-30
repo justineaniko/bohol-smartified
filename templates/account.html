@@ -42,4 +42,11 @@
     </form>
     <small class="hint">Your old codes stop working once you make new ones.</small>
   </article>
+
+  <div class="sign-out">
+    <form method="post" action="{{ url_for('auth.logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="outline secondary">Sign out</button>
+    </form>
+  </div>
 {% endblock %}

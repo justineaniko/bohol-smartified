@@ -21,7 +21,6 @@
 
     <div class="code-actions">
       <button type="button" class="outline" id="copy-codes" data-codes="{{ codes_text }}">Copy</button>
-      {# Built on the server; no JavaScript needed to download #}
       <a role="button" class="outline" download="bohol-house-recovery-codes.txt"
          href="data:text/plain;charset=utf-8,{{ codes_text|urlencode }}">Download .txt</a>
     </div>
@@ -38,7 +37,6 @@
       await navigator.clipboard.writeText(event.target.dataset.codes);
       event.target.textContent = 'Copied ✓';
     } catch (e) {
-      // Clipboard needs https; on plain http, select the codes by hand instead
       event.target.textContent = "Couldn't copy: select them by hand";
     }
   });

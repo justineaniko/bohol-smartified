@@ -27,7 +27,6 @@
     <p class="muted center">Alert when {{ item.threshold }} or fewer left</p>
     {% if item.expiry_date %}<p class="center">{{ m.expiry_badge(item.expiry_date) }}</p>{% endif %}
 
-    {# Big buttons. Both are POST, so just opening this page never changes stock. #}
     <div class="big-actions">
       <form method="post" action="{{ url_for('inventory.use_item', item_id=item.id) }}">
         {{ m.csrf() }}
@@ -58,10 +57,6 @@
         {% if item.season %}<dt>Season</dt><dd>{{ item.season|capitalize }}</dd>{% endif %}
       </dl>
     </article>
-  {% endif %}
-
-  {% if item.notes %}
-    <article><h3>Notes</h3><p class="pre-line">{{ item.notes }}</p></article>
   {% endif %}
 
   <div class="page-actions">

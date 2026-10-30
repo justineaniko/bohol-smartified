@@ -24,7 +24,6 @@
   <div class="recipe-body">
     <article>
       <h3>Ingredients</h3>
-      {# Tick boxes are just for cooking along; nothing is saved #}
       <ul class="checklist">
         {% for line in recipe.ingredients.splitlines() if line.strip() %}
           <li><label><input type="checkbox"> {{ line.strip() }}</label></li>

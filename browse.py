@@ -25,7 +25,7 @@ def _tabs():
 def index():
     tabs = _tabs()
     tab = request.args.get("tab", "all")
-    if tab not in tabs:  # e.g. ?tab=books without the feature
+    if tab not in tabs:
         tab = "all"
     user_id = g.user["id"]
     q = request.args.get("q", "").strip()[:100]
@@ -36,7 +36,7 @@ def index():
         filters["category"] = tab
         ctx.update(items=inventory.list_items(user_id, **filters), filters=filters,
                    sorts=inventory.SORTS, seasons=inventory.SEASONS)
-        if tab == "clothes":  # clothes get an extra season filter, applied here
+        if tab == "clothes":
             season = request.args.get("season")
             if season in inventory.SEASONS:
                 ctx["items"] = [i for i in ctx["items"] if i.get("season") == season]
@@ -54,7 +54,7 @@ def index():
                    meal_types=recipes.MEAL_TYPES, time_limits=recipes.TIME_LIMITS,
                    tags=recipes.all_tags())
 
-    else:  # "all": a short preview of each section, all matching q
+    else:
         ctx["sections"] = []
         for key in inventory.CATEGORIES:
             found = inventory.list_items(user_id, category=key, q=q)

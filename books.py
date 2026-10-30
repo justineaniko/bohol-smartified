@@ -8,7 +8,7 @@ ROUTES: done.  DATA LAYER: your TODOs (pages load empty until you write them).
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
 from auth import require_feature
-from db import get_db  # noqa: F401
+from db import get_db
 
 bp = Blueprint("books", __name__, url_prefix="/books")
 
@@ -22,53 +22,37 @@ def books_access():
     require_feature("books")
 
 
-# =============================================================================
-# DATA LAYER: your TODOs
-# Book dicts need: id, title, author, status, rating, pages, genre,
-#                  started_on, finished_on (dates), notes
-# =============================================================================
-
 def list_books(user_id, status=None, q="", sort="recent"):
     """This user's books. status: a STATUSES key or None for all. q: search title/author.
     sort: recent -> created_at DESC, title, author, rating -> rating DESC."""
-    # TODO
     return []
 
 
 def book_counts(user_id):
     """Return {"reading": n, "to_read": n, "finished": n} for the tab badges.
     Hint: SELECT status, COUNT(*) ... GROUP BY status"""
-    # TODO
     return {"reading": 0, "to_read": 0, "finished": 0}
 
 
 def get_book(book_id, user_id):
     """One book dict, or None if it doesn't exist OR belongs to someone else."""
-    # TODO
     return None
 
 
 def create_book(data, user_id):
     """INSERT with owner_id = user_id. `data` comes from _read_book_form()."""
-    # TODO
     pass
 
 
 def update_book(book_id, data, user_id):
     """UPDATE ... WHERE id = %s AND owner_id = %s"""
-    # TODO
     pass
 
 
 def delete_book(book_id, user_id):
     """DELETE ... WHERE id = %s AND owner_id = %s"""
-    # TODO
     pass
 
-
-# =============================================================================
-# ROUTES: done
-# =============================================================================
 
 def _read_book_form():
     f = request.form

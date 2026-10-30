@@ -16,6 +16,7 @@
         <tr>
           <th scope="col">Profile</th>
           {% for key, label in FEATURES.items() %}<th scope="col">{{ label }}</th>{% endfor %}
+          <th scope="col">Manage</th>
         </tr>
       </thead>
       <tbody>
@@ -40,6 +41,28 @@
                 </form>
               </td>
             {% endfor %}
+            <td class="manage-cell">
+              <details class="manage">
+                <summary role="button" class="outline secondary small-btn">Password</summary>
+                <form method="post" action="{{ url_for('auth.admin_set_password', user_id=u.id) }}">
+                  {{ m.csrf() }}
+                  <input type="password" name="password" placeholder="New password" autocomplete="new-password" minlength="8" required aria-label="New password for {{ u.display_name }}">
+                  <input type="password" name="confirm" placeholder="Type it again" autocomplete="new-password" minlength="8" required aria-label="Confirm new password for {{ u.display_name }}">
+                  <button type="submit" class="small-btn">Set password</button>
+                </form>
+              </details>
+              {% if u.id != g.user.id %}
+              <details class="manage">
+                <summary role="button" class="outline contrast small-btn">Delete</summary>
+                <form method="post" action="{{ url_for('auth.admin_delete_user', user_id=u.id) }}">
+                  {{ m.csrf() }}
+                  <p class="danger-note">Deletes @{{ u.username }} and their books. Type their username to confirm.</p>
+                  <input type="text" name="confirm_username" placeholder="{{ u.username }}" autocomplete="off" required aria-label="Type {{ u.username }} to confirm">
+                  <button type="submit" class="danger small-btn">Delete profile</button>
+                </form>
+              </details>
+              {% endif %}
+            </td>
           </tr>
         {% endfor %}
       </tbody>

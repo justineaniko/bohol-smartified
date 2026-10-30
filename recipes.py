@@ -4,7 +4,7 @@ ROUTES: done.  DATA LAYER: your TODOs (pages load empty until you write them).
 """
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from db import get_db  # noqa: F401
+from db import get_db
 
 bp = Blueprint("recipes", __name__, url_prefix="/recipes")
 
@@ -14,54 +14,37 @@ TIME_LIMITS = {15: "15 min or less", 30: "30 min or less", 60: "1 hour or less"}
 SORTS = {"newest": "Newest", "title": "Title", "quickest": "Quickest"}
 
 
-# =============================================================================
-# DATA LAYER: your TODOs
-# Recipe dicts need: id, title, meal_type, cuisine, prep_minutes, servings,
-#   tags (the comma-separated string), ingredients, steps (newline-separated text),
-#   created_by_name (LEFT JOIN users for display_name)
-# =============================================================================
-
 def list_recipes(q="", meal_type=None, max_minutes=None, tag=None, sort="newest"):
     """Filtered recipes.
     q: search title, ingredients and tags. meal_type: MEAL_TYPES key or None.
     max_minutes: prep_minutes <= this, or None. tag: one tag; match with
     FIND_IN_SET(%s, REPLACE(tags, ', ', ',')) or a LIKE. sort: newest/title/quickest."""
-    # TODO
     return []
 
 
 def all_tags():
     """Every distinct tag, sorted, for the tag chips. Easiest in Python:
     SELECT tags FROM recipes, then split each on ',' and strip() into a set."""
-    # TODO
     return []
 
 
 def get_recipe(recipe_id):
     """One recipe dict or None."""
-    # TODO
     return None
 
 
 def create_recipe(data, user_id):
     """INSERT with created_by = user_id. Return the new id (cur.lastrowid)."""
-    # TODO
     return None
 
 
 def update_recipe(recipe_id, data):
-    # TODO
     pass
 
 
 def delete_recipe(recipe_id):
-    # TODO
     pass
 
-
-# =============================================================================
-# ROUTES: done
-# =============================================================================
 
 def _read_recipe_form():
     f = request.form

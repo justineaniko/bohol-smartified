@@ -1,14 +1,4 @@
-"""Accounts for Bohol House: sign up, sign in/out, "keep me signed in",
-recovery codes (no email needed) and password changes.
 
-How pages are protected
-- EVERY page requires sign-in by default (see require_login below).
-  Only the pages listed in PUBLIC_ENDPOINTS open while signed out.
-- The check runs on the server for every request, before the page is built,
-  so typing a page's URL directly can't skip it. Nothing is hidden with
-  JavaScript, and there are no JavaScript redirects.
-- Passwords and recovery codes are stored only as one-way hashes (scrypt).
-"""
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -23,10 +13,9 @@ from db import get_db
 
 bp = Blueprint("auth", __name__)
 
-# The ONLY pages anyone can open without signing in. Everything else is locked.
 PUBLIC_ENDPOINTS = {"auth.login", "auth.register", "auth.recover", "static"}
 
-MAX_FAILED_ATTEMPTS = 5      # wrong passwords/codes before a lockout
+MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
 RECOVERY_CODE_COUNT = 8
 MIN_PASSWORD_LENGTH = 8
@@ -36,14 +25,8 @@ LOGIN_ERROR = "Wrong username or password."
 RECOVER_ERROR = "That username and recovery code don't match."
 LOCKED_ERROR = f"Too many wrong tries. Wait {LOCKOUT_MINUTES} minutes and try again."
 
-# Checked when a username doesn't exist, so a wrong username takes as long
-# as a wrong password. That way nobody can probe which usernames exist.
 _DUMMY_HASH = generate_password_hash(secrets.token_hex(16))
 
-
-# ---------------------------------------------------------------------------
-# Runs before EVERY request, in this order: load user -> check form token -> lock page
-# ---------------------------------------------------------------------------
 
 @bp.before_app_request
 def load_logged_in_user():
@@ -61,7 +44,6 @@ def load_logged_in_user():
                 (user_id,),
             )
             user = cur.fetchone()
-    # Password was changed or reset since this cookie was made -> sign this device out
     if user is None or user["session_version"] != session.get("session_version"):
         session.clear()
         return
@@ -84,10 +66,10 @@ def require_login():
     """Default-deny: any page not in PUBLIC_ENDPOINTS needs a signed-in user."""
     if g.user is not None or request.endpoint in PUBLIC_ENDPOINTS:
         return
-    if request.endpoint is None:  # unknown URL: let Flask answer 404
+    if request.endpoint is None:
         return
     next_page = request.path if request.method == "GET" else None
-    return redirect(url_for("auth.login", next=next_page))  # server-side redirect
+    return redirect(url_for("auth.login", next=next_page))
 
 
 @bp.after_app_request
@@ -108,12 +90,8 @@ def inject_csrf_token():
     return {"csrf_token": csrf_token}
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def _now():
-    return datetime.now(timezone.utc).replace(tzinfo=None)  # stored as UTC
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def _same(a, b):
@@ -129,11 +107,9 @@ def _safe_next(target):
 
 
 def _start_session(user, remember):
-    session.clear()  # fresh session on sign-in
+    session.clear()
     session["user_id"] = user["id"]
     session["session_version"] = user["session_version"]
-    # True: cookie lasts PERMANENT_SESSION_LIFETIME (30 days), even after closing the browser.
-    # False: cookie is deleted when the browser closes.
     session.permanent = remember
 
 
@@ -193,10 +169,6 @@ def _codes_left(cur, user_id):
     return cur.fetchone()["n"]
 
 
-# ---------------------------------------------------------------------------
-# Pages
-# ---------------------------------------------------------------------------
-
 @bp.route("/register", methods=["GET", "POST"])
 def register():
     if g.user:
@@ -221,7 +193,6 @@ def register():
         if error is None:
             with get_db() as conn:
                 with conn.cursor() as cur:
-                    # The very first profile becomes the admin (can switch features on for others)
                     cur.execute("SELECT COUNT(*) AS n FROM users")
                     is_first = cur.fetchone()["n"] == 0
                     try:
@@ -262,7 +233,7 @@ def login():
             with conn.cursor() as cur:
                 user = _get_user(cur, username)
                 if user is None:
-                    check_password_hash(_DUMMY_HASH, password)  # same delay as a real check
+                    check_password_hash(_DUMMY_HASH, password)
                     error = LOGIN_ERROR
                 elif _is_locked(user):
                     error = LOCKED_ERROR
@@ -320,7 +291,6 @@ def recover():
                             error = RECOVER_ERROR
                         else:
                             cur.execute("UPDATE recovery_codes SET used_at = %s WHERE id = %s", (_now(), match["id"]))
-                            # session_version + 1 signs out every device still using the old password
                             cur.execute(
                                 "UPDATE users SET password_hash = %s, session_version = session_version + 1, "
                                 "failed_attempts = 0, locked_until = NULL WHERE id = %s",
@@ -360,7 +330,7 @@ def account():
                             (generate_password_hash(new), g.user["id"]),
                         )
                         conn.commit()
-                        session["session_version"] = g.user["session_version"] + 1  # keep THIS device signed in
+                        session["session_version"] = g.user["session_version"] + 1
                         flash("Password changed. Your other devices have been signed out.", "success")
                     return redirect(url_for("auth.account"))
 
@@ -376,11 +346,7 @@ def account():
     return render_template("account.html", codes_left=left)
 
 
-# ---------------------------------------------------------------------------
-# Features that only some profiles get (e.g. the book tracker)
-# ---------------------------------------------------------------------------
-
-FEATURES = {"books": "Book tracker"}   # add more here later, e.g. "wardrobe": "Wardrobe"
+FEATURES = {"books": "Book tracker"}
 
 
 def has_feature(feature):
@@ -439,12 +405,6 @@ def admin_access():
             enabled = {(row["user_id"], row["feature"]) for row in cur.fetchall()}
     return render_template("admin_access.html", users=users, enabled=enabled)
 
-
-# ---------------------------------------------------------------------------
-# Last resort, run in Terminal:  flask --app app auth reset-password <username>
-# For someone who lost their password AND every recovery code.
-# Only works on a computer that has the .env file (you), so it's safe.
-# ---------------------------------------------------------------------------
 
 @bp.cli.command("reset-password")
 @click.argument("username")

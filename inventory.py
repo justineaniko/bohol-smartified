@@ -3,7 +3,7 @@ import requests
 
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from db import get_db  
+from db import get_db
 
 bp = Blueprint("inventory", __name__)
 
@@ -27,15 +27,15 @@ def list_items(user_id, category=None, q="", owner="all", location=None, low_onl
         where.append(VISIBLE)
         params.append(user_id)
 
-    if location: 
+    if location:
         where.append("location_id = %s")
         params.append(location)
     if category:
         where.append("category = %s")
         params.append(category)
-    if q: 
-        where.append("(name LIKE %s OR notes LIKE %s)")
-        params.extend([f"%{q}%", f"%{q}%"])
+    if q:
+        where.append("name LIKE %s")
+        params.append(f"%{q}%")
     if low_only:
         where.append("quantity <= threshold")
 
@@ -53,7 +53,7 @@ def list_items(user_id, category=None, q="", owner="all", location=None, low_onl
         " ORDER BY " + order_by
     )
 
-    with get_db() as conn: 
+    with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)
             return cur.fetchall()
@@ -65,7 +65,7 @@ def get_item(item_id, user_id):
         "FROM items LEFT JOIN users ON items.owner_id = users.id "
         " WHERE items.id = %s AND " + VISIBLE
     )
-    with get_db() as conn: 
+    with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, (item_id, user_id))
             return cur.fetchone()
@@ -77,11 +77,11 @@ def create_item(data, user_id):
         with conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO items (name, brand, pack_size, category, owner_id, quantity, threshold, "
-                "location_id, shelf, expiry_date, size, color, season, notes) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "location_id, shelf, expiry_date, size, color, season) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (data["name"], data["brand"], data["pack_size"], data["category"], owner_id,
                  data["quantity"], data["threshold"], data["location_id"], data["shelf"],
-                 data["expiry_date"], data["size"], data["color"], data["season"], data["notes"]),
+                 data["expiry_date"], data["size"], data["color"], data["season"]),
             )
             conn.commit()
             return cur.lastrowid
@@ -92,12 +92,12 @@ def update_item(item_id, data, user_id):
     sql = (
         "UPDATE items SET name = %s, brand = %s, pack_size = %s, category = %s, owner_id = %s, "
         "quantity = %s, threshold = %s, location_id = %s, shelf = %s, expiry_date = %s, "
-        "size = %s, color = %s, season = %s, notes = %s "
+        "size = %s, color = %s, season = %s "
         "WHERE id = %s AND " + VISIBLE
     )
     params = (data["name"], data["brand"], data["pack_size"], data["category"], owner_id,
               data["quantity"], data["threshold"], data["location_id"], data["shelf"],
-              data["expiry_date"], data["size"], data["color"], data["season"], data["notes"],
+              data["expiry_date"], data["size"], data["color"], data["season"],
               item_id, user_id)
     with get_db() as conn:
         with conn.cursor() as cur:
@@ -122,7 +122,7 @@ def change_quantity(item_id, user_id, delta):
                 (delta, item_id, user_id)
             )
             conn.commit()
-    
+
     item = get_item(item_id, user_id)
     check_low_stock(item)
     return item
@@ -131,7 +131,7 @@ def change_quantity(item_id, user_id, delta):
 def check_low_stock(item):
     if item is None:
         return
-    
+
     is_low = item["quantity"] <= item["threshold"]
 
     if is_low and not item["low_stock_alert_sent"]:
@@ -165,7 +165,7 @@ def send_discord_alert(message):
 def list_locations():
     """Return every location as a dict (id, slug, name, shelf_count), sorted by name."""
 
-    sql = ( 
+    sql = (
         "SELECT id, slug, name, shelf_count "
         "FROM locations "
         "ORDER BY name"
@@ -177,7 +177,7 @@ def list_locations():
 
 def get_location(slug):
     """Return one location dict by its slug, or None if there isn't one."""
-    if slug: 
+    if slug:
         with get_db() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -249,11 +249,10 @@ def _read_item_form():
         "threshold": f.get("threshold", type=int),
         "location_id": f.get("location_id", type=int),
         "shelf": f.get("shelf", type=int),
-        "expiry_date": f.get("expiry_date") or None,  # "YYYY-MM-DD" string or None
+        "expiry_date": f.get("expiry_date") or None,
         "size": f.get("size", "").strip()[:20] or None,
         "color": f.get("color", "").strip()[:30] or None,
         "season": f.get("season") if f.get("season") in SEASONS else None,
-        "notes": f.get("notes", "").strip()[:2000] or None,
         "private": f.get("private") == "on",
     }
 
@@ -319,7 +318,6 @@ def dashboard():
 
 @bp.route("/item/<int:item_id>")
 def item_page(item_id):
-    # GET only: opening a link must never change data
     item = get_item(item_id, g.user["id"])
     if item is None:
         abort(404)
@@ -343,7 +341,6 @@ def restock_item(item_id):
 
 @bp.route("/add", methods=["GET", "POST"])
 def add_item():
-    # ?location_id=3&shelf=2 pre-fills the form (used by "Add item here" on a location page)
     data = {"category": request.args.get("category", "products"), "quantity": 1, "threshold": 0,
             "location_id": request.args.get("location_id", type=int),
             "shelf": request.args.get("shelf", type=int)}
@@ -403,7 +400,6 @@ def locations():
         if not name:
             flash("Give the location a name.", "error")
         else:
-            # Unique slug for the QR URL: "pink-room-fridge", then "-2", "-3"...
             base = _slugify(name)
             slug, n = base, 2
             while get_location(slug):
@@ -417,13 +413,11 @@ def locations():
 
 @bp.route("/location/<slug>")
 def location_page(slug):
-    # This is the page a location's QR code opens. GET only, so scanning never changes stock.
     loc = get_location(slug)
     if loc is None:
         abort(404)
     items = list_items(g.user["id"], location=loc["id"]) or []
 
-    # Group by shelf: [(1, [...]), (2, [...]), ..., (None, [...no shelf...])]
     groups = []
     if loc["shelf_count"]:
         for n in range(1, loc["shelf_count"] + 1):

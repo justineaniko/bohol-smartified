@@ -1,8 +1,6 @@
-{# Reusable pieces. Import with: {% import "_macros.html" as m with context %} #}
 
 {% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
 
-{# "Expires in 3 days" / "Expired 2 days ago" #}
 {% macro expiry_badge(expiry_date) %}
   {% if expiry_date %}
     {% set days = (expiry_date - today).days %}
@@ -37,7 +35,6 @@
     <small class="muted">Alert at {{ item.threshold }}</small>
 
     <footer>
-      {# POST forms, so viewing a page never changes stock #}
       <form method="post" action="{{ url_for('inventory.use_item', item_id=item.id) }}">
         {{ csrf() }}<input type="hidden" name="back" value="{{ back }}">{% if slug %}<input type="hidden" name="slug" value="{{ slug }}">{% endif %}
         <button type="submit" class="outline" aria-label="Use one {{ item.name }}">−1</button>
@@ -86,7 +83,6 @@
   </a>
 {% endmacro %}
 
-{# Delete button that needs a second click, without JavaScript popups #}
 {% macro delete_form(action, label) %}
   <details class="danger-zone">
     <summary>Delete {{ label }}</summary>

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ 'Add medicine' if mode == 'add' else 'Edit ' ~ med.name }} · Bohol House{% endblock %}
+
+{% block content %}
+  <a href="{{ url_for('medicine.index') }}" class="back-link">← Back</a>
+  <h1>{{ 'Add medicine' if mode == 'add' else 'Edit ' ~ med.name }}</h1>
+
+  <form method="post" class="form-card" id="med-form">
+    {{ m.csrf() }}
+
+    <div class="grid">
+      <label>Name
+        <input name="name" maxlength="100" value="{{ med.name or '' }}" required autofocus placeholder="e.g. Biogesic">
+      </label>
+      <label>Generic name
+        <input name="generic_name" maxlength="100" value="{{ med.generic_name or '' }}" required placeholder="e.g. Paracetamol">
+      </label>
+    </div>
+
+    <label>Strength <span class="muted">(optional)</span>
+      <input name="strength" maxlength="30" value="{{ med.strength or '' }}" placeholder="e.g. 500 mg, 5 mg/5 ml">
+    </label>
+
+    <div class="grid">
+      <label>Quantity
+        <input type="number" name="quantity" min="0" max="99999" value="{{ med.quantity if med.quantity is not none else 1 }}" required>
+      </label>
+      <label>Alert when at or below
+        <input type="number" name="threshold" min="0" max="99999" value="{{ med.threshold if med.threshold is not none else 0 }}" required>
+      </label>
+    </div>
+
+    <div class="grid">
+      <label>Expiry date <span class="muted">(optional)</span>
+        <input type="date" name="expiry_date" value="{{ med.expiry_date or '' }}">
+      </label>
+      <label>Opened on <span class="muted">(optional)</span>
+        <input type="date" name="opened_on" value="{{ med.opened_on or '' }}">
+      </label>
+    </div>
+
+    <div class="grid">
+      <label>Where is it kept? <span class="muted">(optional)</span>
+        <select name="location_id" id="location-select">
+          <option value="" data-shelves="0">—</option>
+          {% for loc in locations %}
+            <option value="{{ loc.id }}" data-shelves="{{ loc.shelf_count or 0 }}" {% if med.location_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label id="shelf-field">Shelf
+        <select name="shelf" id="shelf-select">
+          <option value="">—</option>
+          {% for n in range(1, max_shelves + 1) %}
+            <option value="{{ n }}" {% if med.shelf == n %}selected{% endif %}>{{ ordinal(n) }} shelf</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+
+    <label>
+      <input type="checkbox" name="private" role="switch" {% if med.private or med.owner_id %}checked{% endif %}>
+      Private: only I can see this
+    </label>
+    <small class="hint">Leave off for the shared medicine cabinet.</small>
+
+    <button type="submit">{{ 'Add medicine' if mode == 'add' else 'Save changes' }}</button>
+  </form>
+
+  {% if mode == 'edit' %}
+    {{ m.delete_form(url_for('medicine.remove', med_id=med.id), med.name) }}
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const locSelect = document.getElementById('location-select');
+  const shelfField = document.getElementById('shelf-field');
+  const shelfSelect = document.getElementById('shelf-select');
+  function syncShelves() {
+    const count = Number(locSelect.selectedOptions[0].dataset.shelves || 0);
+    shelfField.hidden = count === 0;
+    shelfSelect.querySelectorAll('option').forEach(opt => {
+      opt.hidden = opt.value !== '' && Number(opt.value) > count;
+    });
+    if (Number(shelfSelect.value) > count) shelfSelect.value = '';
+  }
+  locSelect.addEventListener('change', syncShelves);
+  syncShelves();
+</script>
+{% endblock %}
