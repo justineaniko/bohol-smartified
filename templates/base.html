@@ -23,6 +23,7 @@
     </ul>
     <ul>
       {% if g.user %}<li><a href="{{ url_for('browse.index') }}" role="button" class="outline secondary icon-btn search-link" aria-label="Search everything" {% if request.endpoint == 'browse.index' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a></li>{% endif %}
+      {% if g.user %}<li><a href="{{ url_for('voice.index') }}" role="button" class="outline secondary icon-btn search-link" aria-label="Quick add by voice" {% if request.endpoint == 'voice.index' %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5"/></svg></a></li>{% endif %}
       <li><button id="theme-toggle" class="outline secondary icon-btn" aria-label="Toggle light/dark mode">☀️</button></li>
       {% if g.user %}
         <li><a href="{{ url_for('auth.account') }}" class="who">{{ g.user.display_name }}</a></li>
