@@ -29,7 +29,8 @@
     <div class="meta">
       <span class="chip">{{ categories.get(item.category, item.category) }}</span>
       {% if item.place_count and item.place_count > 1 %}<span class="chip chip-accent" title="Kept in {{ item.place_count }} places">🔗 {{ item.group_total }} total</span>{% endif %}
-      {% if item.owner_id %}<span class="chip chip-private">{{ item.owner_name or 'Mine' }}</span>{% else %}<span class="chip">Shared</span>{% endif %}
+      {% if item.owner_id %}<span class="chip chip-private">{{ item.owner_name or 'Mine' }}</span>{% elif not item.assigned_to %}<span class="chip">Shared</span>{% endif %}
+      {% if item.assigned_to %}<span class="chip chip-assigned">👤 {{ 'You' if g.user and item.assigned_to == g.user.id else item.assigned_name }}</span>{% endif %}
       {% if back == "room" %}{% if item.shelf %}<span class="chip">📍 {{ ordinal(item.shelf) }} shelf</span>{% endif %}{% else %}{% set where = location_label(item) %}{% if where and back != "location" %}<span class="chip">📍 {{ where }}</span>{% endif %}{% endif %}
       {{ expiry_badge(item.expiry_date) }}
     </div>

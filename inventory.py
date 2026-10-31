@@ -14,13 +14,14 @@ SORTS = {"name": "Name", "quantity": "Quantity", "expiry": "Expiry date", "newes
 VISIBLE = "(items.owner_id = %s OR items.owner_id IS NULL)"
 GROUP_TOTAL = "COALESCE((SELECT SUM(x.quantity) FROM items x WHERE x.link_id = items.link_id), items.quantity)"
 ITEM_SELECT = (
-    "SELECT items.*, users.display_name AS owner_name, "
+    "SELECT items.*, users.display_name AS owner_name, assignee.display_name AS assigned_name, "
     + GROUP_TOTAL + " AS group_total, "
     "(SELECT COUNT(*) FROM items x WHERE x.link_id = items.link_id) AS place_count, "
     "(" + GROUP_TOTAL + " <= items.threshold) AS is_low "
     "FROM items LEFT JOIN users ON items.owner_id = users.id "
+    "LEFT JOIN users assignee ON items.assigned_to = assignee.id "
 )
-SHARED_FIELDS = ("name", "brand", "pack_size", "category", "threshold", "restock_to")
+SHARED_FIELDS = ("name", "brand", "pack_size", "category", "threshold", "restock_to", "assigned_to")
 MAX_SHELVES = 10
 
 
@@ -33,6 +34,9 @@ def list_items(user_id, category=None, q="", owner="all", location=None, low_onl
         params.append(user_id)
     elif owner == "shared":
         where.append("items.owner_id IS NULL")
+    elif owner == "assigned":
+        where.append(VISIBLE + " AND items.assigned_to = %s")
+        params.extend([user_id, user_id])
     else:
         where.append(VISIBLE)
         params.append(user_id)
@@ -81,11 +85,11 @@ def create_item(data, user_id):
         with conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO items (name, brand, pack_size, category, owner_id, quantity, threshold, "
-                "restock_to, location_id, shelf, expiry_date, place_min) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "restock_to, location_id, shelf, expiry_date, place_min, assigned_to) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (data["name"], data["brand"], data["pack_size"], data["category"], owner_id,
                  data["quantity"], data["threshold"], data["restock_to"], data["location_id"], data["shelf"],
-                 data["expiry_date"], data.get("place_min")),
+                 data["expiry_date"], data.get("place_min"), data.get("assigned_to")),
             )
             conn.commit()
             return cur.lastrowid
@@ -96,12 +100,12 @@ def update_item(item_id, data, user_id, link_id=None):
     sql = (
         "UPDATE items SET name = %s, brand = %s, pack_size = %s, category = %s, owner_id = %s, "
         "quantity = %s, threshold = %s, restock_to = %s, location_id = %s, shelf = %s, "
-        "expiry_date = %s, place_min = %s "
+        "expiry_date = %s, place_min = %s, assigned_to = %s "
         "WHERE id = %s AND " + VISIBLE
     )
     params = (data["name"], data["brand"], data["pack_size"], data["category"], owner_id,
               data["quantity"], data["threshold"], data["restock_to"], data["location_id"], data["shelf"],
-              data["expiry_date"], data.get("place_min"),
+              data["expiry_date"], data.get("place_min"), data.get("assigned_to"),
               item_id, user_id)
     with get_db() as conn:
         with conn.cursor() as cur:
@@ -133,11 +137,13 @@ def add_to_place(item, location_id, shelf, quantity, place_min):
                 cur.execute("UPDATE items SET link_id = %s WHERE id = %s", (link_id, item["id"]))
             cur.execute(
                 "INSERT INTO items (name, brand, pack_size, category, owner_id, quantity, threshold, "
-                "restock_to, location_id, shelf, expiry_date, link_id, place_min, low_stock_alert_sent) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "restock_to, location_id, shelf, expiry_date, link_id, place_min, low_stock_alert_sent, "
+                "assigned_to) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (item["name"], item["brand"], item["pack_size"], item["category"], item["owner_id"],
                  quantity, item["threshold"], item["restock_to"], location_id, shelf,
-                 item["expiry_date"], link_id, place_min, item["low_stock_alert_sent"]),
+                 item["expiry_date"], link_id, place_min, item["low_stock_alert_sent"],
+                 item.get("assigned_to")),
             )
             conn.commit()
             return cur.lastrowid
@@ -420,8 +426,11 @@ def _read_item_form():
         "shelf": f.get("shelf", type=int),
         "expiry_date": f.get("expiry_date") or None,
         "place_min": f.get("place_min", type=int),
+        "assigned_to": f.get("assigned_to", type=int),
         "private": f.get("private") == "on",
     }
+    if data["assigned_to"] is not None and not any(u["id"] == data["assigned_to"] for u in list_users()):
+        data["assigned_to"] = None
     if data["place_min"] is not None and data["place_min"] < 0:
         data["place_min"] = None
 
@@ -448,7 +457,7 @@ def _filters_from_args():
     return {
         "category": category if category in CATEGORIES else None,
         "q": request.args.get("q", "").strip()[:100],
-        "owner": request.args.get("owner") if request.args.get("owner") in ("all", "mine", "shared") else "all",
+        "owner": request.args.get("owner") if request.args.get("owner") in ("all", "mine", "shared", "assigned") else "all",
         "low_only": request.args.get("low") == "1",
         "sort": request.args.get("sort") if request.args.get("sort") in SORTS else "name",
     }
@@ -472,8 +481,15 @@ def _back_url(item_id):
 
 def _form_context():
     """Everything item_form.html needs besides the item itself."""
-    return {"categories": CATEGORIES,
+    return {"categories": CATEGORIES, "users": list_users(),
             "locations": list_locations() or [], "max_shelves": MAX_SHELVES}
+
+
+def list_users():
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, display_name FROM users ORDER BY display_name")
+            return cur.fetchall() or []
 
 
 @bp.route("/")

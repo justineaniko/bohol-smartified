@@ -18,6 +18,7 @@
           {% if item.brand %}{{ item.brand }} ·{% endif %}
           {{ categories.get(item.category, item.category) }}
           · {% if item.owner_id %}{{ item.owner_name or 'Mine' }} (private){% else %}Shared{% endif %}
+          {% if item.assigned_to %}· <strong>{{ item.assigned_name }}'s</strong>{% endif %}
           {% if location %}· <a href="{{ url_for('inventory.location_page', slug=location.slug) }}">{{ location_label(item) }}</a>{% endif %}
         </p>
       </hgroup>

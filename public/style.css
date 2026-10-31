@@ -687,3 +687,5 @@ a.location-card:hover { transform: translateY(-2px); }
 .also-keep { margin: 0; }
 .also-keep summary { color: var(--pico-primary); }
 .also-keep form { margin-top: 0.75rem; }
+
+.chip-assigned { background: var(--amber-soft); color: var(--amber); }

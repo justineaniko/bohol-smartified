@@ -26,6 +26,7 @@
         <option value="all" {% if filters.owner == 'all' %}selected{% endif %}>Shared + mine</option>
         <option value="shared" {% if filters.owner == 'shared' %}selected{% endif %}>Shared only</option>
         <option value="mine" {% if filters.owner == 'mine' %}selected{% endif %}>Mine only</option>
+        <option value="assigned" {% if filters.owner == 'assigned' %}selected{% endif %}>Assigned to me</option>
       </select>
       <select name="sort" aria-label="Sort">
         {% for key, label in sorts.items() %}<option value="{{ key }}" {% if filters.sort == key %}selected{% endif %}>Sort: {{ label }}</option>{% endfor %}

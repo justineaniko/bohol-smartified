@@ -59,10 +59,12 @@ CREATE TABLE IF NOT EXISTS items (
   link_id              INT          NULL,
   place_min            INT          NULL,
   move_alert_sent      BOOLEAN      NOT NULL DEFAULT FALSE,
+  assigned_to          INT          NULL,
   notes                TEXT         NULL,
   created_at           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL,
-  FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL
+  FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL,
+  FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS grocery_entries (

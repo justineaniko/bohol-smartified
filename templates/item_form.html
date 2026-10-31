@@ -72,6 +72,14 @@
       </label>
     </div>
 
+    <label>Whose is it? <span class="muted">(optional)</span>
+      <select name="assigned_to">
+        <option value="">Nobody in particular</option>
+        {% for u in users %}<option value="{{ u.id }}" {% if item.assigned_to == u.id %}selected{% endif %}>{{ u.display_name }}{% if g.user and u.id == g.user.id %} (me){% endif %}</option>{% endfor %}
+      </select>
+    </label>
+    <small class="hint">Tag something as someone's, like your brother's drink in the fridge. Everyone can still see it.</small>
+
     <label>
       <input type="checkbox" name="private" role="switch" {% if item.private %}checked{% endif %}>
       Private: only I can see this
