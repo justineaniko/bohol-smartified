@@ -3,12 +3,16 @@
 {% block title %}{{ location.name }} · Bohol House{% endblock %}
 
 {% block content %}
-  <a href="{{ url_for('inventory.locations') }}" class="back-link">← Locations</a>
+  {% if location.room_slug %}
+    <a href="{{ url_for('inventory.room_page', slug=location.room_slug) }}" class="back-link">← {{ location.room_name }}</a>
+  {% else %}
+    <a href="{{ url_for('inventory.locations') }}" class="back-link">← Locations</a>
+  {% endif %}
 
   <header class="top">
     <hgroup>
       <h1>{{ location.name }}</h1>
-      <p>{{ items|length }} item{{ '' if items|length == 1 else 's' }}{% if location.shelf_count %} · {{ location.shelf_count }} shelves{% endif %}</p>
+      <p>{% if location.room_name %}{{ location.room_name }} · {% endif %}{{ items|length }} item{{ '' if items|length == 1 else 's' }}{% if location.shelf_count %} · {{ location.shelf_count }} shelves{% endif %}</p>
     </hgroup>
     <div class="actions">
       {{ m.view_toggle() }}
@@ -16,7 +20,7 @@
     </div>
   </header>
 
-  {% set low = items | selectattr('is_low') | list %}
+  {% set low = items | selectattr('is_low') | rejectattr('category', 'equalto', 'leftovers') | list %}
   {% if low %}
     <article class="alert"><strong>{{ low|length }} running low:</strong> {{ low | map(attribute='name') | join(', ') }}</article>
   {% endif %}
@@ -40,6 +44,36 @@
       {% endif %}
     </section>
   {% endfor %}
+
+  <article class="form-card move-room">
+    <h3>Edit this place</h3>
+    <form method="post" action="{{ url_for('inventory.edit_location', slug=location.slug) }}">
+      {{ m.csrf() }}
+      <label>Name
+        <input name="name" maxlength="60" value="{{ location.name }}" required>
+      </label>
+      <div class="grid">
+        <label>Room
+          <select name="room_id">{{ m.room_options(rooms, location.room_id) }}</select>
+        </label>
+        <label>Shelves
+          <select name="shelf_count">
+            <option value="">No shelves</option>
+            {% for n in range(1, max_shelves + 1) %}
+              <option value="{{ n }}" {% if location.shelf_count == n %}selected{% endif %}>{{ n }} shel{{ 'f' if n == 1 else 'ves' }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <label>Or a new room <span class="muted">(optional)</span>
+        <input name="new_room" maxlength="60" placeholder="e.g. Blue room">
+      </label>
+      <button type="submit">Save changes</button>
+    </form>
+    <small class="muted">The QR link stays the same after renaming. Fewer shelves moves anything on the removed ones to “No shelf set”.</small>
+    {{ m.delete_form(url_for('inventory.delete_location_page', slug=location.slug), location.name) }}
+    <small class="muted">Deleting keeps its items in your inventory; they just lose their place.</small>
+  </article>
 
   <article class="qr-box">
     <h3>QR code</h3>

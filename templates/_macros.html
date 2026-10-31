@@ -17,21 +17,23 @@
 {% endmacro %}
 
 {% macro item_card(item, categories, back="list", slug=None) %}
-  <article class="card {% if item.is_low %}low{% endif %}">
+  {% set leftover = item.category == 'leftovers' %}
+  <article class="card {% if item.is_low and not leftover %}low{% endif %}">
     <header>
       <a href="{{ url_for('inventory.item_page', item_id=item.id) }}" class="card-title">{{ item.name }}{% if item.pack_size %} <span class="muted card-size">{{ item.pack_size }}</span>{% endif %}</a>
-      {% if item.is_low %}<span class="badge badge-low">Low</span>{% else %}<span class="badge badge-ok">OK</span>{% endif %}
+      {% if leftover %}<span class="badge badge-muted">Leftover</span>{% elif item.is_low %}<span class="badge badge-low">Low</span>{% else %}<span class="badge badge-ok">OK</span>{% endif %}
     </header>
 
     {% if item.brand %}<p class="muted byline">{{ item.brand }}</p>{% endif %}
     <p class="qty">{{ item.quantity }}</p>
     <div class="meta">
       <span class="chip">{{ categories.get(item.category, item.category) }}</span>
+      {% if item.place_count and item.place_count > 1 %}<span class="chip chip-accent" title="Kept in {{ item.place_count }} places">🔗 {{ item.group_total }} total</span>{% endif %}
       {% if item.owner_id %}<span class="chip chip-private">{{ item.owner_name or 'Mine' }}</span>{% else %}<span class="chip">Shared</span>{% endif %}
-      {% set where = location_label(item) %}{% if where and back != "location" %}<span class="chip">📍 {{ where }}</span>{% endif %}
+      {% if back == "room" %}{% if item.shelf %}<span class="chip">📍 {{ ordinal(item.shelf) }} shelf</span>{% endif %}{% else %}{% set where = location_label(item) %}{% if where and back != "location" %}<span class="chip">📍 {{ where }}</span>{% endif %}{% endif %}
       {{ expiry_badge(item.expiry_date) }}
     </div>
-    <small class="muted">Alert at {{ item.threshold }}</small>
+    {% if leftover %}<small class="muted">{% if item.created_at %}Saved {{ item.created_at.strftime('%b %-d') }}{% else %}&nbsp;{% endif %}</small>{% else %}<small class="muted">Alert at {{ item.threshold }}{% if item.place_count and item.place_count > 1 %} total{% endif %}</small>{% endif %}
 
     <footer>
       <form method="post" action="{{ url_for('inventory.use_item', item_id=item.id) }}">
@@ -44,6 +46,22 @@
       </form>
     </footer>
   </article>
+{% endmacro %}
+
+{% macro room_options(rooms, selected=None) %}
+  <option value="">No room</option>
+  {% for r in rooms %}<option value="{{ r.id }}" {% if selected == r.id %}selected{% endif %}>{{ r.name }}</option>{% endfor %}
+{% endmacro %}
+
+{% macro location_options(locations, selected=None) %}
+  <option value="" data-shelves="0">—</option>
+  {% set groups = group_by_room(locations) %}
+  {% set grouped = groups|length > 1 or (groups and groups[0][0]) %}
+  {% for room, locs in groups %}
+    {% if grouped %}<optgroup label="{{ room or 'No room' }}">{% endif %}
+    {% for loc in locs %}<option value="{{ loc.id }}" data-shelves="{{ loc.shelf_count or 0 }}" {% if selected == loc.id %}selected{% endif %}>{{ loc.name }}</option>{% endfor %}
+    {% if grouped %}</optgroup>{% endif %}
+  {% endfor %}
 {% endmacro %}
 
 {% macro view_toggle() %}<button type="button" class="outline secondary view-toggle" data-view-toggle aria-pressed="false">☰ Table</button>{% endmacro %}

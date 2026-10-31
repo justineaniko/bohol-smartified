@@ -6,7 +6,8 @@ bp = Blueprint("grocery", __name__, url_prefix="/grocery")
 
 ENTRY_SELECT = (
     "SELECT g.id, g.name AS name, g.item_id, g.auto_added, "
-    "i.quantity, i.restock_to, i.brand, i.pack_size "
+    "COALESCE((SELECT SUM(x.quantity) FROM items x WHERE x.link_id = i.link_id), i.quantity) AS quantity, "
+    "i.restock_to, i.brand, i.pack_size "
     "FROM grocery_entries g LEFT JOIN items i ON g.item_id = i.id "
 )
 
@@ -84,7 +85,7 @@ def bought(id):
         if item and amount and amount > 0:
             delta = amount
         elif item and item["restock_to"] is not None:
-            delta = item["restock_to"] - item["quantity"]
+            delta = item["restock_to"] - item["group_total"]
         else:
             delta = 1
         if delta > 0:

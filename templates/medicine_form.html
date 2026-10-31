@@ -43,10 +43,7 @@
     <div class="grid">
       <label>Where is it kept? <span class="muted">(optional)</span>
         <select name="location_id" id="location-select">
-          <option value="" data-shelves="0">—</option>
-          {% for loc in locations %}
-            <option value="{{ loc.id }}" data-shelves="{{ loc.shelf_count or 0 }}" {% if med.location_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
-          {% endfor %}
+          {{ m.location_options(locations, med.location_id) }}
         </select>
       </label>
       <label id="shelf-field">Shelf

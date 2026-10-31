@@ -25,12 +25,21 @@ CREATE TABLE IF NOT EXISTS user_features (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS rooms (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  slug       VARCHAR(60)  NOT NULL UNIQUE,
+  name       VARCHAR(60)  NOT NULL,
+  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS locations (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   slug        VARCHAR(60)  NOT NULL UNIQUE,
   name        VARCHAR(60)  NOT NULL,
   shelf_count TINYINT      NULL,
-  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+  room_id     INT          NULL,
+  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS items (
@@ -42,14 +51,30 @@ CREATE TABLE IF NOT EXISTS items (
   owner_id             INT          NULL,
   quantity             INT          NOT NULL DEFAULT 0,
   threshold            INT          NOT NULL DEFAULT 0,
+  restock_to           INT          NULL,
   low_stock_alert_sent BOOLEAN      NOT NULL DEFAULT FALSE,
   location_id          INT          NULL,
   shelf                TINYINT      NULL,
   expiry_date          DATE         NULL,
+  link_id              INT          NULL,
+  place_min            INT          NULL,
+  move_alert_sent      BOOLEAN      NOT NULL DEFAULT FALSE,
   notes                TEXT         NULL,
   created_at           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL,
   FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS grocery_entries (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  name        VARCHAR(100) NOT NULL,
+  owner_id    INT          NULL,
+  item_id     INT          NULL,
+  auto_added  BOOLEAN      NOT NULL DEFAULT FALSE,
+  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (item_id),
+  FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS medicine (

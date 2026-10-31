@@ -612,11 +612,16 @@ a.location-card:hover { transform: translateY(-2px); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   width: 2.6rem;
   height: 2.6rem;
+  margin: 0;
   padding: 0;
   line-height: 1;
+  vertical-align: middle;
 }
+.top-nav ul { align-items: center; }
+.top-nav li { display: flex; align-items: center; }
 .top-nav a.search-link[aria-current="page"] { border-color: var(--pico-primary); color: var(--pico-primary); }
 
 .filter-bar {
@@ -651,3 +656,34 @@ a.location-card:hover { transform: translateY(-2px); }
   .filter-bar select { flex: 1 1 calc(50% - 0.25rem); }
   .filter-bar .inline-check, .filter-bar button { flex: 1 1 auto; justify-content: center; }
 }
+
+.room-section { margin-bottom: 2rem; }
+.room-section h2 a, .shelf-section h2 a { color: inherit; text-decoration: none; }
+.room-section h2 a:hover, .shelf-section h2 a:hover { color: var(--pico-primary); }
+.empty-rooms { font-size: 0.9rem; }
+.add-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 2rem; }
+@media (min-width: 900px) { .add-grid { grid-template-columns: 2fr 1fr; align-items: start; } }
+.add-grid .add-location { margin: 0; }
+.move-room { margin-top: 2rem; }
+.move-room h3 { margin-bottom: 0.6rem; }
+.room-form { flex-wrap: wrap; }
+.room-form select, .room-form input { flex: 1 1 10rem; max-width: none; margin: 0; }
+
+.kept-in h3 { margin-bottom: 0.6rem; }
+.kept-list { list-style: none; padding: 0; margin: 0 0 1rem; }
+.kept-list li {
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+}
+.kept-list li a { flex: 1; }
+.kept-list li.current a { font-weight: 600; }
+.kept-qty { font-weight: 700; color: var(--teal); min-width: 2rem; text-align: right; }
+.kept-total { border-bottom: 0 !important; font-weight: 600; }
+.kept-total span:first-child { flex: 1; }
+.also-keep { margin: 0; }
+.also-keep summary { color: var(--pico-primary); }
+.also-keep form { margin-top: 0.75rem; }

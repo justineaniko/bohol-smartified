@@ -9,7 +9,8 @@
     <a href="{{ url_for('inventory.dashboard') }}" class="back-link">← Supplies</a>
   {% endif %}
 
-  <article class="item-hero {% if item.is_low %}low{% endif %}">
+  {% set leftover = item.category == 'leftovers' %}
+  <article class="item-hero {% if item.is_low and not leftover %}low{% endif %}">
     <header class="item-hero-head">
       <hgroup>
         <h1>{{ item.name }}{% if item.pack_size %} <small class="muted">{{ item.pack_size }}</small>{% endif %}</h1>
@@ -20,11 +21,14 @@
           {% if location %}· <a href="{{ url_for('inventory.location_page', slug=location.slug) }}">{{ location_label(item) }}</a>{% endif %}
         </p>
       </hgroup>
-      {% if item.is_low %}<span class="badge badge-low">Running low</span>{% else %}<span class="badge badge-ok">Stocked</span>{% endif %}
+      {% if leftover %}<span class="badge badge-muted">Leftover</span>{% elif item.is_low %}<span class="badge badge-low">Running low</span>{% else %}<span class="badge badge-ok">Stocked</span>{% endif %}
     </header>
 
     <p class="qty qty-big">{{ item.quantity }}</p>
-    <p class="muted center">Alert when {{ item.threshold }} or fewer left</p>
+    {% set linked = group|length > 1 %}
+    {% if leftover %}<p class="muted center">{% if item.created_at %}Saved {{ item.created_at.strftime('%b %-d') }}{% endif %}</p>
+    {% elif linked %}<p class="muted center">here · {{ item.group_total }} across {{ group|length }} places · alert at {{ item.threshold }} total</p>
+    {% else %}<p class="muted center">Alert when {{ item.threshold }} or fewer left</p>{% endif %}
     {% if item.expiry_date %}<p class="center">{{ m.expiry_badge(item.expiry_date) }}</p>{% endif %}
 
     <div class="big-actions">
@@ -48,8 +52,77 @@
     </details>
   </article>
 
+  {% if not leftover %}
+  <article class="kept-in">
+    <h3>{% if linked %}Kept in {{ group|length }} places{% else %}Also kept somewhere else?{% endif %}</h3>
+    {% if linked %}
+      <ul class="kept-list">
+        {% for other in group %}
+          <li {% if other.id == item.id %}class="current"{% endif %}>
+            <a href="{{ url_for('inventory.item_page', item_id=other.id) }}">{{ location_label(other) or 'No place set' }}</a>
+            <span class="kept-qty">{{ other.quantity }}</span>
+            {% if other.place_min is not none %}<small class="muted">keep ≥ {{ other.place_min }}</small>{% endif %}
+            {% if other.id == item.id %}<small class="muted">this one</small>{% endif %}
+          </li>
+        {% endfor %}
+        <li class="kept-total"><span>Total</span><span class="kept-qty">{{ item.group_total }}</span></li>
+      </ul>
+    {% else %}
+      <p class="muted">Same thing in two spots, like the fridge and the pantry? Add the other place. Low stock then goes by the total.</p>
+    {% endif %}
+
+    <details class="also-keep" {% if not linked %}open{% endif %}>
+      <summary>+ Also keep in another place</summary>
+      <form method="post" action="{{ url_for('inventory.also_keep', item_id=item.id) }}" id="also-form">
+        {{ m.csrf() }}
+        <div class="grid">
+          <label>Where
+            <select name="location_id" id="location-select" required>{{ m.location_options(locations) }}</select>
+          </label>
+          <label id="shelf-field">Shelf
+            <select name="shelf" id="shelf-select">
+              <option value="">—</option>
+              {% for n in range(1, max_shelves + 1) %}<option value="{{ n }}">{{ ordinal(n) }} shelf</option>{% endfor %}
+            </select>
+          </label>
+        </div>
+        <div class="grid">
+          <label>How many are there
+            <input type="number" name="quantity" min="0" max="99999" value="0" required>
+          </label>
+          <label>Keep at least <span class="muted">(optional)</span>
+            <input type="number" name="place_min" min="0" max="99999" placeholder="e.g. 2">
+          </label>
+        </div>
+        <small class="hint">“Keep at least” sends a Discord reminder to move some over from another place when this spot runs short.</small>
+        <button type="submit">Add place</button>
+      </form>
+    </details>
+  </article>
+  {% endif %}
+
   <div class="page-actions">
     <a href="{{ url_for('inventory.edit_item', item_id=item.id) }}" role="button" class="outline">Edit</a>
   </div>
   {{ m.delete_form(url_for('inventory.remove_item', item_id=item.id), item.name) }}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const locSelect = document.getElementById('location-select');
+  const shelfField = document.getElementById('shelf-field');
+  const shelfSelect = document.getElementById('shelf-select');
+  function syncShelves() {
+    const count = Number(locSelect.selectedOptions[0].dataset.shelves || 0);
+    shelfField.hidden = count === 0;
+    shelfSelect.querySelectorAll('option').forEach(opt => {
+      opt.hidden = opt.value !== '' && Number(opt.value) > count;
+    });
+    if (Number(shelfSelect.value) > count) shelfSelect.value = '';
+  }
+  if (locSelect) {
+    locSelect.addEventListener('change', syncShelves);
+    syncShelves();
+  }
+</script>
 {% endblock %}

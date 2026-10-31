@@ -13,7 +13,7 @@
       <input name="name" maxlength="100" value="{{ item.name or '' }}" required autofocus placeholder="e.g. Rice, Dish soap, Blue hoodie">
     </label>
 
-    <label>Brand <span class="muted">(optional)</span>
+    <label class="not-leftover">Brand <span class="muted">(optional)</span>
       <input name="brand" maxlength="60" value="{{ item.brand or '' }}" placeholder="e.g. Joy, Nestlé">
     </label>
 
@@ -27,25 +27,29 @@
     </fieldset>
 
     <div class="grid">
-      <label>Quantity
+      <label><span class="not-leftover">Quantity</span><span class="only-leftover" {% if item.category != 'leftovers' %}hidden{% endif %}>Portions / containers</span>
         <input type="number" name="quantity" min="0" max="99999" value="{{ item.quantity if item.quantity is not none else 1 }}" required>
       </label>
-      <label>Alert when at or below
+      <label class="not-leftover">Alert when at or below
         <input type="number" name="threshold" min="0" max="99999" value="{{ item.threshold if item.threshold is not none else 0 }}" required>
       </label>
-      <label>Refill to <span class="muted">(optional)</span>
+      <label class="not-leftover">Refill to <span class="muted">(optional)</span>
         <input type="number" name="restock_to" min="0" max="99999" value="{{ item.restock_to if item.restock_to is not none else '' }}" placeholder="e.g. 6">
       </label>
     </div>
-    <small class="hint">“Refill to” is how many you usually keep. Marking it bought on the grocery list tops it back up to this.</small>
+    <small class="hint not-leftover">“Refill to” is how many you usually keep. Marking it bought on the grocery list tops it back up to this.{% if item.place_count and item.place_count > 1 %} This item is kept in {{ item.place_count }} places, so these count the total and apply to all of them.{% endif %}</small>
+    {% if item.place_count and item.place_count > 1 %}
+      <label class="not-leftover">Keep at least this many here <span class="muted">(optional, for “move it over” reminders)</span>
+        <input type="number" name="place_min" min="0" max="99999" value="{{ item.place_min if item.place_min is not none else '' }}" placeholder="e.g. 2">
+      </label>
+    {% else %}
+      <input type="hidden" name="place_min" value="{{ item.place_min if item.place_min is not none else '' }}">
+    {% endif %}
 
     <div class="grid">
       <label>Where is it kept? <span class="muted">(optional)</span>
         <select name="location_id" id="location-select">
-          <option value="" data-shelves="0">—</option>
-          {% for loc in locations %}
-            <option value="{{ loc.id }}" data-shelves="{{ loc.shelf_count or 0 }}" {% if item.location_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
-          {% endfor %}
+          {{ m.location_options(locations, item.location_id) }}
         </select>
       </label>
       <label id="shelf-field">Shelf
@@ -63,7 +67,7 @@
       <label>Size <span class="muted">(optional)</span>
         <input name="pack_size" maxlength="30" value="{{ item.pack_size or '' }}" placeholder="5 kg, 500 ml, 12 pcs">
       </label>
-      <label>Expiry date <span class="muted">(optional)</span>
+      <label><span class="not-leftover">Expiry date</span><span class="only-leftover" {% if item.category != 'leftovers' %}hidden{% endif %}>Eat by</span> <span class="muted">(optional)</span>
         <input type="date" name="expiry_date" value="{{ item.expiry_date or '' }}">
       </label>
     </div>
@@ -80,6 +84,20 @@
 
 {% block scripts %}
 <script>
+  const itemForm = document.getElementById('item-form');
+  function syncLeftover() {
+    const chosen = itemForm.querySelector('input[name="category"]:checked');
+    const leftover = chosen && chosen.value === 'leftovers';
+    itemForm.querySelectorAll('.not-leftover').forEach(el => { el.hidden = leftover; });
+    itemForm.querySelectorAll('.only-leftover').forEach(el => { el.hidden = !leftover; });
+    if (leftover) {
+      itemForm.querySelector('input[name="threshold"]').value = 0;
+      itemForm.querySelector('input[name="restock_to"]').value = '';
+    }
+  }
+  itemForm.addEventListener('change', e => { if (e.target.name === 'category') syncLeftover(); });
+  syncLeftover();
+
   const locSelect = document.getElementById('location-select');
   const shelfField = document.getElementById('shelf-field');
   const shelfSelect = document.getElementById('shelf-select');

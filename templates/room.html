@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ room.name }} · Bohol House{% endblock %}
+
+{% block content %}
+  <a href="{{ url_for('inventory.locations') }}" class="back-link">← Locations</a>
+
+  <header class="top">
+    <hgroup>
+      <h1>{{ room.name }}</h1>
+      <p>{{ groups|length }} place{{ '' if groups|length == 1 else 's' }} · {{ items|length }} item{{ '' if items|length == 1 else 's' }}</p>
+    </hgroup>
+    <div class="actions">
+      {{ m.view_toggle() }}
+    </div>
+  </header>
+
+  {% set low = items | selectattr('is_low') | rejectattr('category', 'equalto', 'leftovers') | list %}
+  {% if low %}
+    <article class="alert"><strong>{{ low|length }} running low:</strong> {{ low | map(attribute='name') | join(', ') }}</article>
+  {% endif %}
+
+  {% for loc, loc_items in groups %}
+    <section class="shelf-section">
+      <div class="section-head">
+        <h2><a href="{{ url_for('inventory.location_page', slug=loc.slug) }}">{{ loc.name }}</a></h2>
+        <a href="{{ url_for('inventory.add_item', location_id=loc.id) }}" class="clear-link">+ Add here</a>
+      </div>
+      {% if loc_items %}
+        <div class="grid-cards" data-viewable>
+          {% for item in loc_items %}{{ m.item_card(item, categories, back="room", slug=room.slug) }}{% endfor %}
+        </div>
+      {% else %}
+        <p class="muted empty-shelf">Nothing here yet.</p>
+      {% endif %}
+    </section>
+  {% else %}
+    {{ m.empty("No cabinets or fridges in " ~ room.name ~ " yet.", url_for('inventory.locations'), "Add one") }}
+  {% endfor %}
+
+  <article class="form-card move-room">
+    <h3>Rename room</h3>
+    <form method="post" action="{{ url_for('inventory.rename_room_page', slug=room.slug) }}" class="inline-form room-form">
+      {{ m.csrf() }}
+      <input name="name" maxlength="60" value="{{ room.name }}" required aria-label="Room name">
+      <button type="submit">Save</button>
+    </form>
+    <small class="muted">The QR link stays the same, so printed codes keep working.</small>
+    {{ m.delete_form(url_for('inventory.delete_room_page', slug=room.slug), room.name) }}
+    <small class="muted">Deleting a room keeps its cabinets and items. They just move to “No room yet”.</small>
+  </article>
+
+  <article class="qr-box">
+    <h3>QR code</h3>
+    <p class="muted">Optional: a QR on the door that opens this whole room:</p>
+    <code class="qr-url">{{ url_for('inventory.room_page', slug=room.slug, _external=True) }}</code>
+  </article>
+{% endblock %}

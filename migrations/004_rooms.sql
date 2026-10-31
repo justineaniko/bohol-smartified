@@ -1,0 +1,12 @@
+USE supplies_tracker;
+
+CREATE TABLE IF NOT EXISTS rooms (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  slug       VARCHAR(60)  NOT NULL UNIQUE,
+  name       VARCHAR(60)  NOT NULL,
+  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE locations ADD COLUMN room_id INT NULL;
+ALTER TABLE locations ADD CONSTRAINT fk_locations_room
+  FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL;

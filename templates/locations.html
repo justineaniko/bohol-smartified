@@ -8,44 +8,85 @@
   <header class="top">
     <hgroup>
       <h1>Locations</h1>
-      <p>Each place gets one QR code. Scanning it opens everything kept there.</p>
+      <p>Rooms hold cabinets, fridges and drawers. Each place gets one QR code.</p>
     </hgroup>
   </header>
 
   {% if locations %}
-    <div class="grid-cards">
-      {% for loc in locations %}
-        <a class="card location-card" href="{{ url_for('inventory.location_page', slug=loc.slug) }}">
-          <span class="card-title">{{ loc.name }}</span>
-          <div class="meta">
-            {% if loc.shelf_count %}<span class="chip chip-accent">{{ loc.shelf_count }} shelves</span>{% else %}<span class="chip">No shelves</span>{% endif %}
-          </div>
-          <small class="muted qr-path">/location/{{ loc.slug }}</small>
-        </a>
-      {% endfor %}
-    </div>
+    {% for room, locs in group_by_room(locations) %}
+      <section class="room-section">
+        <div class="section-head">
+          {% if room %}
+            <h2><a href="{{ url_for('inventory.room_page', slug=locs[0].room_slug) }}">{{ room }}</a></h2>
+            <a href="{{ url_for('inventory.room_page', slug=locs[0].room_slug) }}" class="clear-link">Everything in here →</a>
+          {% else %}
+            <h2>No room yet</h2>
+            <small class="muted">Open one and pick its room</small>
+          {% endif %}
+        </div>
+        <div class="grid-cards">
+          {% for loc in locs %}
+            <a class="card location-card" href="{{ url_for('inventory.location_page', slug=loc.slug) }}">
+              <span class="card-title">{{ loc.name }}</span>
+              <div class="meta">
+                {% if loc.shelf_count %}<span class="chip chip-accent">{{ loc.shelf_count }} shelves</span>{% else %}<span class="chip">No shelves</span>{% endif %}
+              </div>
+              <small class="muted qr-path">/location/{{ loc.slug }}</small>
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
   {% else %}
     {{ m.empty("No locations yet. Add the first one below.") }}
   {% endif %}
 
-  <article class="form-card add-location">
-    <h3>Add a location</h3>
-    <form method="post">
-      {{ m.csrf() }}
-      <div class="grid">
+  {% set empty_rooms = rooms | rejectattr('id', 'in', locations | map(attribute='room_id') | list) | list %}
+  {% if empty_rooms %}
+    <p class="muted empty-rooms">Rooms with nothing in them yet:
+      {% for r in empty_rooms %}<a href="{{ url_for('inventory.room_page', slug=r.slug) }}">{{ r.name }}</a>{{ ', ' if not loop.last }}{% endfor %}
+    </p>
+  {% endif %}
+
+  <div class="add-grid">
+    <article class="form-card add-location">
+      <h3>Add a cabinet, fridge or drawer</h3>
+      <form method="post">
+        {{ m.csrf() }}
+        <input type="hidden" name="form" value="location">
         <label>Name
-          <input name="name" maxlength="60" required placeholder="e.g. Pink room fridge">
+          <input name="name" maxlength="60" required placeholder="e.g. Toiletries cabinet">
         </label>
-        <label>Shelves
-          <select name="shelf_count">
-            <option value="">No shelves</option>
-            {% for n in range(1, max_shelves + 1) %}
-              <option value="{{ n }}">{{ n }} shel{{ 'f' if n == 1 else 'ves' }}</option>
-            {% endfor %}
-          </select>
+        <div class="grid">
+          <label>Room
+            <select name="room_id">{{ m.room_options(rooms) }}</select>
+          </label>
+          <label>Shelves
+            <select name="shelf_count">
+              <option value="">No shelves</option>
+              {% for n in range(1, max_shelves + 1) %}
+                <option value="{{ n }}">{{ n }} shel{{ 'f' if n == 1 else 'ves' }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+        <label>Or a new room <span class="muted">(optional)</span>
+          <input name="new_room" maxlength="60" placeholder="e.g. Blue room">
         </label>
-      </div>
-      <button type="submit">Add location</button>
-    </form>
-  </article>
+        <button type="submit">Add location</button>
+      </form>
+    </article>
+
+    <article class="form-card add-location">
+      <h3>Add a room</h3>
+      <form method="post">
+        {{ m.csrf() }}
+        <input type="hidden" name="form" value="room">
+        <label>Name
+          <input name="name" maxlength="60" required placeholder="e.g. Blue room, Kitchen">
+        </label>
+        <button type="submit">Add room</button>
+      </form>
+    </article>
+  </div>
 {% endblock %}

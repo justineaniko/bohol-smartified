@@ -5,7 +5,7 @@
 {% block content %}
   <header class="top">
     <hgroup>
-      <h1>Supplies</h1>
+      <h1>Inventory</h1>
       <p>{{ items|length }} item{{ '' if items|length == 1 else 's' }}{% if filters.q or filters.category or filters.low_only or filters.owner != 'all' %} matching{% endif %}</p>
     </hgroup>
     <div class="actions">
@@ -15,7 +15,7 @@
     </div>
   </header>
 
-  {% set low = items | selectattr('is_low') | list %}
+  {% set low = items | selectattr('is_low') | rejectattr('category', 'equalto', 'leftovers') | list %}
   {% if low and not filters.low_only %}
     <article class="alert">
       <strong>{{ low|length }} running low:</strong>
