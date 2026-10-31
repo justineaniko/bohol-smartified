@@ -440,3 +440,47 @@ def reset_password_command(username):
     click.echo(f"Password reset for {user['username']}. Their new recovery codes:")
     for c in codes:
         click.echo(f"  {c}")
+
+@bp.route("/admin/users/<int:user_id>/password", methods=["POST"])
+def admin_set_password(user_id):
+    if not g.user["is_admin"]:
+        abort(403)
+    new = request.form.get("password", "")
+    problem = _password_problem(new, request.form.get("confirm", ""))
+    if problem:
+        flash(problem, "error")
+        return redirect(url_for("auth.admin_access"))
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET password_hash = %s, session_version = session_version + 1, "
+                "failed_attempts = 0, locked_until = NULL WHERE id = %s",
+                (generate_password_hash(new), user_id),
+            )
+            conn.commit()
+    if user_id == g.user["id"]:
+        session["session_version"] = g.user["session_version"] + 1
+    flash("Password updated. They've been signed out everywhere.", "success")
+    return redirect(url_for("auth.admin_access"))
+
+
+@bp.route("/admin/users/<int:user_id>/delete", methods=["POST"])
+def admin_delete_user(user_id):
+    if not g.user["is_admin"]:
+        abort(403)
+    if user_id == g.user["id"]:
+        flash("You can't delete your own profile here.", "error")
+        return redirect(url_for("auth.admin_access"))
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT username FROM users WHERE id = %s", (user_id,))
+            user = cur.fetchone()
+            if user is None:
+                abort(404)
+            if request.form.get("confirm_username", "").strip().lower() != user["username"]:
+                flash("The username didn't match, so nothing was deleted.", "error")
+                return redirect(url_for("auth.admin_access"))
+            cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+            conn.commit()
+    flash(f"Deleted @{user['username']}.", "success")
+    return redirect(url_for("auth.admin_access"))
