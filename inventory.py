@@ -239,12 +239,15 @@ def set_alert_flag(item_id, value, link_id=None):
 def send_discord_alert(message):
     url = os.environ.get("DISCORD_WEBHOOK_URL")
     if not url:
-       return
+        print("Discord alert skipped: DISCORD_WEBHOOK_URL is not set")
+        return
 
     try:
-        requests.post(url, json = {"content": message}, timeout = 5)
-    except requests.RequestException:
-        pass
+        r = requests.post(url, json={"content": message, "allowed_mentions": {"parse": []}}, timeout=5)
+        if r.status_code >= 300:
+            print(f"Discord alert failed: {r.status_code} {r.text[:200]}")
+    except requests.RequestException as e:
+        print(f"Discord alert failed: {e}")
 
 
 LOCATION_SELECT = (
