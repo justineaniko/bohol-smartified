@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}{{ 'Add supply' if mode == 'add' else 'Edit ' ~ supply.name }} · Bohol House{% endblock %}
+
+{% block content %}
+  <a href="{{ url_for('hospital.index') }}" class="back-link">← Back</a>
+  <h1>{{ 'Add a hospital supply' if mode == 'add' else 'Edit ' ~ supply.name }}</h1>
+
+  <form method="post" class="form-card" id="hs-form">
+    {{ m.csrf() }}
+
+    <label>Name
+      <input name="name" maxlength="100" value="{{ supply.name or '' }}" required autofocus placeholder="e.g. Gauze pads, Syringe, Nebulizer">
+    </label>
+
+    <fieldset>
+      <legend>Type</legend>
+      <div class="segmented">
+        {% for key, label in kinds.items() %}
+          <label><input type="radio" name="kind" value="{{ key }}" {% if supply.kind == key %}checked{% endif %} required> {{ label }}</label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <div class="grid">
+      <label>Quantity
+        <span class="stepper">
+          <button type="button" class="outline secondary" data-step="-1" aria-label="One less">−</button>
+          <input type="number" name="quantity" min="0" max="99999" value="{{ supply.quantity if supply.quantity is not none else 1 }}" inputmode="numeric" required>
+          <button type="button" class="outline secondary" data-step="1" aria-label="One more">+</button>
+        </span>
+      </label>
+      <label>Counted in
+        <select name="unit">
+          <option value="">—</option>
+          {% for u in units %}<option value="{{ u }}" {% if supply.unit == u %}selected{% endif %}>{{ u }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Size <span class="muted">(optional)</span>
+        <input name="size" maxlength="30" value="{{ supply.size or '' }}" placeholder="10 ml, 22G, Medium, 4x4 in">
+      </label>
+    </div>
+
+    <fieldset>
+      <legend>Condition</legend>
+      <div class="segmented">
+        {% for key, label in conditions.items() %}
+          <label><input type="radio" name="item_condition" value="{{ key }}" {% if supply.item_condition == key %}checked{% endif %} required> {{ label }}</label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Status</legend>
+      <div class="segmented">
+        {% for key, label in statuses.items() %}
+          <label><input type="radio" name="status" value="{{ key }}" {% if supply.status == key %}checked{% endif %} required> {{ label }}</label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <label>Expiry date <span class="muted">(optional, printed on sterile packs)</span>
+      <input type="date" name="expiry_date" value="{{ supply.expiry_date or '' }}">
+    </label>
+
+    <div class="grid">
+      <label>Where is it kept? <span class="muted">(optional)</span>
+        <select name="location_id" id="location-select">
+          <option value="" data-shelves="0">—</option>
+          {% for loc in locations %}
+            <option value="{{ loc.id }}" data-shelves="{{ loc.shelf_count or 0 }}" {% if supply.location_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label id="shelf-field">Shelf
+        <select name="shelf" id="shelf-select">
+          <option value="">—</option>
+          {% for n in range(1, max_shelves + 1) %}
+            <option value="{{ n }}" {% if supply.shelf == n %}selected{% endif %}>{{ ordinal(n) }} shelf</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+
+    <label>Notes <span class="muted">(optional)</span>
+      <textarea name="notes" rows="3" maxlength="2000" placeholder="e.g. Sold 10 to a neighbor, donated the rest to the clinic">{{ supply.notes or '' }}</textarea>
+    </label>
+
+    <button type="submit">{{ 'Add supply' if mode == 'add' else 'Save changes' }}</button>
+  </form>
+
+  {% if mode == 'edit' %}
+    {{ m.delete_form(url_for('hospital.remove', supply_id=supply.id), supply.name) }}
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const locSelect = document.getElementById('location-select');
+  const shelfField = document.getElementById('shelf-field');
+  const shelfSelect = document.getElementById('shelf-select');
+  function syncShelves() {
+    const count = Number(locSelect.selectedOptions[0].dataset.shelves || 0);
+    shelfField.hidden = count === 0;
+    shelfSelect.querySelectorAll('option').forEach(opt => {
+      opt.hidden = opt.value !== '' && Number(opt.value) > count;
+    });
+    if (Number(shelfSelect.value) > count) shelfSelect.value = '';
+  }
+  locSelect.addEventListener('change', syncShelves);
+  syncShelves();
+</script>
+{% endblock %}

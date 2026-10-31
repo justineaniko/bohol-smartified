@@ -9,6 +9,7 @@
       <p>{{ items|length }} item{{ '' if items|length == 1 else 's' }}{% if filters.q or filters.category or filters.low_only or filters.owner != 'all' %} matching{% endif %}</p>
     </hgroup>
     <div class="actions">
+      {{ m.view_toggle() }}
       <a href="{{ url_for('inventory.locations') }}" role="button" class="outline">Locations</a>
       <a href="{{ url_for('inventory.add_item') }}" role="button">+ Add item</a>
     </div>
@@ -43,7 +44,6 @@
     </select>
     <label class="inline-check"><input type="checkbox" name="low" value="1" {% if filters.low_only %}checked{% endif %}> Low only</label>
     <button type="submit">Filter</button>
-    {{ m.view_toggle() }}
     {% if filters.q or filters.category or filters.low_only or filters.owner != 'all' or filters.sort != 'name' %}
       <a href="{{ url_for('inventory.dashboard') }}" class="clear-link">Clear</a>
     {% endif %}

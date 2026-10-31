@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Hospital supplies · Bohol House{% endblock %}
+
+{% macro supply_card(s) %}
+  {% set expired = s.expiry_date and s.expiry_date < today %}
+  <article class="card hs-card {% if expired and s.status == 'in_stock' %}low{% endif %}">
+    <header>
+      <a href="{{ url_for('hospital.edit', supply_id=s.id) }}" class="card-title">{{ s.name }}{% if s.size %} <span class="muted card-size">{{ s.size }}</span>{% endif %}</a>
+      <span class="badge {{ {'in_stock': 'badge-ok', 'donated': 'badge-warn', 'sold': 'badge-accent', 'disposed': 'badge-muted'}.get(s.status, 'badge-muted') }}">{{ statuses.get(s.status, s.status) }}</span>
+    </header>
+    <p class="muted byline">{{ kinds.get(s.kind, s.kind) }}</p>
+    <p class="qty">{{ s.quantity }}{% if s.unit %} <span class="qty-unit">{{ s.unit }}</span>{% endif %}</p>
+    <div class="meta">
+      <span class="chip {{ 'chip-accent' if s.item_condition == 'sealed' else '' }}">{{ conditions.get(s.item_condition, s.item_condition) }}</span>
+      {{ m.expiry_badge(s.expiry_date) }}
+      {% set where = location_label(s) %}{% if where %}<span class="chip">📍 {{ where }}</span>{% endif %}
+    </div>
+    {% if s.notes %}<small class="muted hs-note">{{ s.notes }}</small>{% else %}<small class="muted">&nbsp;</small>{% endif %}
+    <footer>
+      <form method="post" action="{{ url_for('hospital.use', supply_id=s.id, **request.args) }}">
+        {{ m.csrf() }}
+        <button type="submit" class="outline" aria-label="Remove one {{ s.name }}">−1</button>
+      </form>
+      <form method="post" action="{{ url_for('hospital.restock', supply_id=s.id, **request.args) }}">
+        {{ m.csrf() }}
+        <button type="submit" aria-label="Add one {{ s.name }}">+1</button>
+      </form>
+      <details class="g-bought hs-add">
+        <summary role="button" class="secondary" aria-label="Add several {{ s.name }}">+ Add</summary>
+        <form method="post" action="{{ url_for('hospital.restock', supply_id=s.id, **request.args) }}" class="g-bought-form">
+          {{ m.csrf() }}
+          <strong>{{ s.name }}</strong>
+          <label>How many to add?
+            <span class="stepper">
+              <button type="button" class="outline secondary" data-step="-1" aria-label="One less">−</button>
+              <input type="number" name="amount" min="1" max="99999" value="1" inputmode="numeric" required>
+              <button type="button" class="outline secondary" data-step="1" aria-label="One more">+</button>
+            </span>
+          </label>
+          <small class="muted">Now {{ s.quantity }}{% if s.unit %} {{ s.unit }}{% endif %}</small>
+          <button type="submit">Add to stock</button>
+        </form>
+      </details>
+    </footer>
+  </article>
+{% endmacro %}
+
+{% block content %}
+  {% set filtered = filters.q or filters.kind or filters.condition %}
+  <header class="top">
+    <hgroup>
+      <h1>Hospital supplies</h1>
+      <p>Leftover medical supplies, and where each one went</p>
+    </hgroup>
+    <div class="actions">
+      {{ m.view_toggle() }}
+      <a href="{{ url_for('hospital.add') }}" role="button">+ Add supply</a>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="What to do with it">
+    <a role="tab" href="{{ url_for('hospital.index', q=filters.q or None, kind=filters.kind, condition=filters.condition, sort=filters.sort) }}"
+       {% if not filters.status %}aria-selected="true" aria-current="page"{% endif %}>All <span class="count">{{ counts.values() | sum }}</span></a>
+    {% for key, label in statuses.items() %}
+      <a role="tab" href="{{ url_for('hospital.index', status=key, q=filters.q or None, kind=filters.kind, condition=filters.condition, sort=filters.sort) }}"
+         {% if filters.status == key %}aria-selected="true" aria-current="page"{% endif %}>{{ label }} <span class="count">{{ counts.get(key, 0) }}</span></a>
+    {% endfor %}
+  </div>
+
+  {% set expired_names = [] %}
+  {% for s in supplies %}{% if s.expiry_date and s.expiry_date < today and s.status == 'in_stock' %}{% set _ = expired_names.append(s.name) %}{% endif %}{% endfor %}
+  {% if expired_names %}
+    <article class="alert">
+      <strong>{{ expired_names|length }} expired and still in stock:</strong> {{ expired_names | join(', ') }}.
+      Sterile items past their date usually shouldn't be used.
+    </article>
+  {% endif %}
+
+  <form method="get" class="filter-bar">
+    {% if filters.status %}<input type="hidden" name="status" value="{{ filters.status }}">{% endif %}
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search name, size, notes…" aria-label="Search">
+    <select name="kind" aria-label="Type">
+      <option value="">All types</option>
+      {% for key, label in kinds.items() %}<option value="{{ key }}" {% if filters.kind == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <select name="condition" aria-label="Condition">
+      <option value="">Any condition</option>
+      {% for key, label in conditions.items() %}<option value="{{ key }}" {% if filters.condition == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <select name="sort" aria-label="Sort">
+      {% for key, label in sorts.items() %}<option value="{{ key }}" {% if filters.sort == key %}selected{% endif %}>Sort: {{ label }}</option>{% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+    {% if filtered or filters.sort != 'name' %}
+      <a href="{{ url_for('hospital.index', status=filters.status) }}" class="clear-link">Clear</a>
+    {% endif %}
+  </form>
+
+  {% if supplies %}
+    <div class="grid-cards" data-viewable>
+      {% for s in supplies %}{{ supply_card(s) }}{% endfor %}
+    </div>
+  {% elif filtered %}
+    {{ m.empty("Nothing matches those filters.", url_for('hospital.index', status=filters.status), "Clear filters") }}
+  {% elif filters.status %}
+    {{ m.empty("Nothing marked “" ~ statuses[filters.status] ~ "”.", url_for('hospital.index'), "Show all") }}
+  {% else %}
+    {{ m.empty("No hospital supplies yet.", url_for('hospital.add'), "+ Add the first one") }}
+  {% endif %}
+{% endblock %}

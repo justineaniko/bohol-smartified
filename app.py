@@ -11,6 +11,7 @@ import books
 import browse
 import inventory
 import grocery
+import hospital
 import medicine
 import recipes
 
@@ -34,6 +35,7 @@ app.register_blueprint(recipes.bp)
 app.register_blueprint(books.bp)
 app.register_blueprint(grocery.bp)
 app.register_blueprint(medicine.bp)
+app.register_blueprint(hospital.bp)
 
 @app.context_processor
 def inject_today():

@@ -46,6 +46,7 @@
       <p>{{ medicines|length }} medicine{{ '' if medicines|length == 1 else 's' }}{% if filtered %} matching{% endif %}</p>
     </hgroup>
     <div class="actions">
+      {{ m.view_toggle() }}
       <a href="{{ url_for('medicine.add') }}" role="button">+ Add medicine</a>
     </div>
   </header>
@@ -84,7 +85,6 @@
     <label class="inline-check"><input type="checkbox" name="low" value="1" {% if filters.low_only %}checked{% endif %}> Low only</label>
     <label class="inline-check"><input type="checkbox" name="expiring" value="1" {% if filters.expiring %}checked{% endif %}> Expiring soon</label>
     <button type="submit">Filter</button>
-    {{ m.view_toggle() }}
     {% if filtered or filters.sort != 'name' %}
       <a href="{{ url_for('medicine.index') }}" class="clear-link">Clear</a>
     {% endif %}
