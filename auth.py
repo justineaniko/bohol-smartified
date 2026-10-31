@@ -339,7 +339,7 @@ def account():
                     conn.commit()
                     return render_template("recovery_codes.html", codes=codes, first_time=False)
 
-                if action in ("siri_key", "siri_revoke") and g.user["is_admin"]:
+                if action in ("siri_key", "siri_revoke"):
                     import api
                     if action == "siri_revoke":
                         api.revoke_key(g.user["id"])
@@ -351,10 +351,8 @@ def account():
     with get_db() as conn:
         with conn.cursor() as cur:
             left = _codes_left(cur, g.user["id"])
-    siri = None
-    if g.user["is_admin"]:
-        import api
-        siri = api.key_info(g.user["id"])
+    import api
+    siri = api.key_info(g.user["id"])
     return render_template("account.html", codes_left=left, siri=siri)
 
 

@@ -43,7 +43,6 @@
     <small class="hint">Your old codes stop working once you make new ones.</small>
   </article>
 
-  {% if g.user.is_admin %}
   <article class="account-section">
     <h3>Siri</h3>
     {% if siri %}
@@ -61,9 +60,8 @@
         {% if siri %}<button type="submit" name="action" value="siri_revoke" class="outline secondary">Turn off</button>{% endif %}
       </div>
     </form>
-    <small class="hint">Only your account can do this. Making a new key stops the old one, so update your shortcuts after.</small>
+    <small class="hint">Your key only works as you, and sees only what you can see. Making a new key stops the old one, so update your shortcuts after.</small>
   </article>
-  {% endif %}
 
   <div class="sign-out">
     <form method="post" action="{{ url_for('auth.logout') }}">

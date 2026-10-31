@@ -22,13 +22,14 @@
           {% if location %}· <a href="{{ url_for('inventory.location_page', slug=location.slug) }}">{{ location_label(item) }}</a>{% endif %}
         </p>
       </hgroup>
-      {% if leftover %}<span class="badge badge-muted">Leftover</span>{% elif item.is_low %}<span class="badge badge-low">Running low</span>{% else %}<span class="badge badge-ok">Stocked</span>{% endif %}
+      {% if leftover %}<span class="badge badge-muted">Leftover</span>{% elif item.is_low %}<span class="badge badge-low">Running low</span>{% elif item.threshold is not none %}<span class="badge badge-ok">Stocked</span>{% endif %}
     </header>
 
     <p class="qty qty-big">{{ item.quantity }}</p>
     {% set linked = group|length > 1 %}
     {% if leftover %}<p class="muted center">{% if item.created_at %}Saved {{ item.created_at.strftime('%b %-d') }}{% endif %}</p>
-    {% elif linked %}<p class="muted center">here · {{ item.group_total }} across {{ group|length }} places · alert at {{ item.threshold }} total</p>
+    {% elif linked %}<p class="muted center">here · {{ item.group_total }} across {{ group|length }} places · {% if item.threshold is none %}no alert{% else %}alert at {{ item.threshold }} total{% endif %}</p>
+    {% elif item.threshold is none %}<p class="muted center">No low-stock alert set</p>
     {% else %}<p class="muted center">Alert when {{ item.threshold }} or fewer left</p>{% endif %}
     {% if item.expiry_date %}<p class="center">{{ m.expiry_badge(item.expiry_date) }}</p>{% endif %}
 
@@ -110,10 +111,11 @@
 
 {% block scripts %}
 <script>
-  const locSelect = document.getElementById('location-select');
-  const shelfField = document.getElementById('shelf-field');
-  const shelfSelect = document.getElementById('shelf-select');
   function syncShelves() {
+    const locSelect = document.getElementById('location-select');
+    const shelfField = document.getElementById('shelf-field');
+    const shelfSelect = document.getElementById('shelf-select');
+    if (!locSelect || !shelfField || !shelfSelect) return;
     const count = Number(locSelect.selectedOptions[0].dataset.shelves || 0);
     shelfField.hidden = count === 0;
     shelfSelect.querySelectorAll('option').forEach(opt => {
@@ -121,9 +123,8 @@
     });
     if (Number(shelfSelect.value) > count) shelfSelect.value = '';
   }
-  if (locSelect) {
-    locSelect.addEventListener('change', syncShelves);
-    syncShelves();
-  }
+  document.addEventListener('change', e => { if (e.target.id === 'location-select') syncShelves(); });
+  document.addEventListener('page:updated', syncShelves);
+  syncShelves();
 </script>
 {% endblock %}

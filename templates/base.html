@@ -73,33 +73,54 @@
     });
   </script>
   <script>
-    (() => {
-      const lists = document.querySelectorAll('[data-viewable]');
-      const buttons = document.querySelectorAll('[data-view-toggle]');
-      if (!buttons.length) return;
-      let view = 'cards';
-      try { view = localStorage.getItem('view') || 'cards'; } catch (e) {}
-      function apply() {
-        const table = view === 'table';
-        lists.forEach(el => el.classList.toggle('as-table', table));
-        buttons.forEach(b => {
-          b.setAttribute('aria-pressed', table);
-          b.textContent = table ? '▦ Cards' : '☰ Table';
-        });
-      }
-      buttons.forEach(b => b.addEventListener('click', () => {
-        view = view === 'table' ? 'cards' : 'table';
-        try { localStorage.setItem('view', view); } catch (e) {}
-        apply();
-      }));
-      apply();
-    })();
+    let view = 'cards';
+    try { view = localStorage.getItem('view') || 'cards'; } catch (e) {}
+    function applyView() {
+      const table = view === 'table';
+      document.querySelectorAll('[data-viewable]').forEach(el => el.classList.toggle('as-table', table));
+      document.querySelectorAll('[data-view-toggle]').forEach(b => {
+        b.setAttribute('aria-pressed', table);
+        b.textContent = table ? '▦ Cards' : '☰ Table';
+      });
+    }
+    document.addEventListener('click', e => {
+      if (!e.target.closest('[data-view-toggle]')) return;
+      view = view === 'table' ? 'cards' : 'table';
+      try { localStorage.setItem('view', view); } catch (e) {}
+      applyView();
+    });
+    applyView();
   </script>
   <script>
-    document.querySelectorAll('form.filter-bar').forEach(form => {
-      form.addEventListener('change', e => {
-        if (e.target.matches('select, input[type="checkbox"]')) form.requestSubmit();
-      });
+    document.addEventListener('change', e => {
+      const form = e.target.closest('form.filter-bar');
+      if (form && e.target.matches('select, input[type="checkbox"]')) form.requestSubmit();
+    });
+
+    const IN_PLACE = '.card form, .g-entry form, .big-actions form, .restock-more form';
+    document.addEventListener('submit', async e => {
+      const form = e.target;
+      if (form.method.toLowerCase() !== 'post' || !form.matches(IN_PLACE) || form.closest('.danger-zone')) return;
+      e.preventDefault();
+      const buttons = form.querySelectorAll('button');
+      buttons.forEach(b => { b.disabled = true; });
+      try {
+        const sent = await fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin' });
+        if (!sent.ok) throw new Error(sent.status);
+        const page = await fetch(location.href, { credentials: 'same-origin' });
+        if (!page.ok) throw new Error(page.status);
+        const doc = new DOMParser().parseFromString(await page.text(), 'text/html');
+        const fresh = doc.querySelector('main');
+        if (!fresh) throw new Error('no main');
+        const y = window.scrollY;
+        document.querySelector('main').replaceWith(fresh);
+        applyView();
+        window.scrollTo(0, y);
+        document.dispatchEvent(new Event('page:updated'));
+      } catch (err) {
+        buttons.forEach(b => { b.disabled = false; });
+        HTMLFormElement.prototype.submit.call(form);
+      }
     });
     document.addEventListener('click', e => {
       const btn = e.target.closest('[data-step]');

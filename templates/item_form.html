@@ -30,8 +30,8 @@
       <label><span class="not-leftover">Quantity</span><span class="only-leftover" {% if item.category != 'leftovers' %}hidden{% endif %}>Portions / containers</span>
         <input type="number" name="quantity" min="0" max="99999" value="{{ item.quantity if item.quantity is not none else 1 }}" required>
       </label>
-      <label class="not-leftover">Alert when at or below
-        <input type="number" name="threshold" min="0" max="99999" value="{{ item.threshold if item.threshold is not none else 0 }}" required>
+      <label class="not-leftover">Alert when at or below <span class="muted">(optional)</span>
+        <input type="number" name="threshold" min="0" max="99999" value="{{ item.threshold if item.threshold is not none else '' }}" placeholder="No alert">
       </label>
       <label class="not-leftover">Refill to <span class="muted">(optional)</span>
         <input type="number" name="restock_to" min="0" max="99999" value="{{ item.restock_to if item.restock_to is not none else '' }}" placeholder="e.g. 6">
@@ -99,7 +99,7 @@
     itemForm.querySelectorAll('.not-leftover').forEach(el => { el.hidden = leftover; });
     itemForm.querySelectorAll('.only-leftover').forEach(el => { el.hidden = !leftover; });
     if (leftover) {
-      itemForm.querySelector('input[name="threshold"]').value = 0;
+      itemForm.querySelector('input[name="threshold"]').value = '';
       itemForm.querySelector('input[name="restock_to"]').value = '';
     }
   }

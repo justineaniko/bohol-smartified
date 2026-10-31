@@ -21,22 +21,54 @@
   <article class="card {% if item.is_low and not leftover %}low{% endif %}">
     <header>
       <a href="{{ url_for('inventory.item_page', item_id=item.id) }}" class="card-title">{{ item.name }}{% if item.pack_size %} <span class="muted card-size">{{ item.pack_size }}</span>{% endif %}</a>
-      {% if leftover %}<span class="badge badge-muted">Leftover</span>{% elif item.is_low %}<span class="badge badge-low">Low</span>{% else %}<span class="badge badge-ok">OK</span>{% endif %}
+      {% if leftover %}<span class="badge badge-muted">Leftover</span>{% elif item.is_low %}<span class="badge badge-low">Low</span>{% elif item.threshold is not none %}<span class="badge badge-ok">OK</span>{% endif %}
     </header>
 
+    {% set grouped = item.places and item.places|length > 1 %}
     {% if item.brand %}<p class="muted byline">{{ item.brand }}</p>{% endif %}
-    <p class="qty">{{ item.quantity }}</p>
+    <p class="qty">{{ item.group_total if grouped else item.quantity }}{% if grouped %} <span class="qty-unit">total</span>{% endif %}</p>
+    {% if grouped %}
+      <ul class="place-split">
+        {% for p in item.places %}<li><span>{{ location_label(p) or 'No place set' }}</span><strong>{{ p.quantity }}</strong></li>{% endfor %}
+      </ul>
+    {% endif %}
     <div class="meta">
       <span class="chip">{{ categories.get(item.category, item.category) }}</span>
-      {% if item.place_count and item.place_count > 1 %}<span class="chip chip-accent" title="Kept in {{ item.place_count }} places">🔗 {{ item.group_total }} total</span>{% endif %}
+      {% if not grouped and item.place_count and item.place_count > 1 %}<span class="chip chip-accent" title="Kept in {{ item.place_count }} places">🔗 {{ item.group_total }} total</span>{% endif %}
       {% if item.owner_id %}<span class="chip chip-private">{{ item.owner_name or 'Mine' }}</span>{% elif not item.assigned_to %}<span class="chip">Shared</span>{% endif %}
       {% if item.assigned_to %}<span class="chip chip-assigned">👤 {{ 'You' if g.user and item.assigned_to == g.user.id else item.assigned_name }}</span>{% endif %}
-      {% if back == "room" %}{% if item.shelf %}<span class="chip">📍 {{ ordinal(item.shelf) }} shelf</span>{% endif %}{% else %}{% set where = location_label(item) %}{% if where and back != "location" %}<span class="chip">📍 {{ where }}</span>{% endif %}{% endif %}
+      {% if grouped %}{% elif back == "room" %}{% if item.shelf %}<span class="chip">📍 {{ ordinal(item.shelf) }} shelf</span>{% endif %}{% else %}{% set where = location_label(item) %}{% if where and back != "location" %}<span class="chip">📍 {{ where }}</span>{% endif %}{% endif %}
       {{ expiry_badge(item.expiry_date) }}
     </div>
-    {% if leftover %}<small class="muted">{% if item.created_at %}Saved {{ item.created_at.strftime('%b %-d') }}{% else %}&nbsp;{% endif %}</small>{% else %}<small class="muted">Alert at {{ item.threshold }}{% if item.place_count and item.place_count > 1 %} total{% endif %}</small>{% endif %}
+    {% if leftover %}<small class="muted">{% if item.created_at %}Saved {{ item.created_at.strftime('%b %-d') }}{% else %}&nbsp;{% endif %}</small>{% else %}<small class="muted">{% if item.threshold is none %}No alert{% else %}Alert at {{ item.threshold }}{% if item.place_count and item.place_count > 1 %} total{% endif %}{% endif %}</small>{% endif %}
 
     <footer>
+      {% if grouped %}
+        <details class="g-bought pick">
+          <summary role="button" class="outline" aria-label="Use one {{ item.name }}">−1</summary>
+          <div class="g-bought-form pick-form">
+            <strong>Take one {{ item.name }} from</strong>
+            {% for p in item.places %}
+              <form method="post" action="{{ url_for('inventory.use_item', item_id=p.id) }}">
+                {{ csrf() }}<input type="hidden" name="back" value="{{ back }}">{% if slug %}<input type="hidden" name="slug" value="{{ slug }}">{% endif %}
+                <button type="submit" class="outline" {% if p.quantity == 0 %}disabled{% endif %}><span>{{ location_label(p) or 'No place set' }}</span><span class="pick-qty">{{ p.quantity }}</span></button>
+              </form>
+            {% endfor %}
+          </div>
+        </details>
+        <details class="g-bought pick">
+          <summary role="button" aria-label="Add one {{ item.name }}">+1</summary>
+          <div class="g-bought-form pick-form">
+            <strong>Put one {{ item.name }} in</strong>
+            {% for p in item.places %}
+              <form method="post" action="{{ url_for('inventory.restock_item', item_id=p.id) }}">
+                {{ csrf() }}<input type="hidden" name="back" value="{{ back }}">{% if slug %}<input type="hidden" name="slug" value="{{ slug }}">{% endif %}
+                <button type="submit"><span>{{ location_label(p) or 'No place set' }}</span><span class="pick-qty">{{ p.quantity }}</span></button>
+              </form>
+            {% endfor %}
+          </div>
+        </details>
+      {% else %}
       <form method="post" action="{{ url_for('inventory.use_item', item_id=item.id) }}">
         {{ csrf() }}<input type="hidden" name="back" value="{{ back }}">{% if slug %}<input type="hidden" name="slug" value="{{ slug }}">{% endif %}
         <button type="submit" class="outline" aria-label="Use one {{ item.name }}">−1</button>
@@ -45,6 +77,7 @@
         {{ csrf() }}<input type="hidden" name="back" value="{{ back }}">{% if slug %}<input type="hidden" name="slug" value="{{ slug }}">{% endif %}
         <button type="submit" aria-label="Add one {{ item.name }}">+1</button>
       </form>
+      {% endif %}
     </footer>
   </article>
 {% endmacro %}

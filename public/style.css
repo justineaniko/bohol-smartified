@@ -696,3 +696,17 @@ a.location-card:hover { transform: translateY(-2px); }
 .siri-steps li { margin-bottom: 0.6rem; line-height: 1.55; }
 .siri-steps ul { margin-top: 0.4rem; }
 .siri-urls code { overflow-wrap: anywhere; }
+
+.place-split { list-style: none; padding: 0; margin: 0.3rem 0 0; font-size: 0.82rem; }
+.place-split li { list-style: none; display: flex; justify-content: space-between; gap: 0.5rem; color: var(--pico-muted-color); margin: 0; }
+.place-split li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.place-split li strong { color: var(--pico-color); }
+.card footer .pick { flex: 1; margin: 0; }
+.card footer .pick > summary { width: 100%; text-align: center; padding: 0.35rem 0.5rem; }
+.pick-form form { margin: 0; }
+.pick-form button { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; width: 100%; margin: 0; text-align: left; }
+.pick-form button[disabled] { opacity: 0.45; }
+.pick-qty { font-weight: 700; }
+.grid-cards.as-table > .card > .place-split { grid-area: byline; display: flex; flex-wrap: wrap; gap: 0 0.8rem; margin: 0; }
+.grid-cards.as-table > .card footer .pick { flex: 0 0 auto; }
+.grid-cards.as-table > .card footer .pick > summary { width: 2.75rem; }

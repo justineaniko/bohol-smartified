@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS items (
   category             VARCHAR(20)  NOT NULL,
   owner_id             INT          NULL,
   quantity             INT          NOT NULL DEFAULT 0,
-  threshold            INT          NOT NULL DEFAULT 0,
+  threshold            INT          NULL,
   restock_to           INT          NULL,
   low_stock_alert_sent BOOLEAN      NOT NULL DEFAULT FALSE,
   location_id          INT          NULL,

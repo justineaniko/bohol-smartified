@@ -119,6 +119,34 @@ def update_item(item_id, data, user_id, link_id=None):
             conn.commit()
 
 
+def collapse_linked(items):
+    items = list(items or [])
+    links = sorted({i["link_id"] for i in items if i.get("link_id") and (i.get("place_count") or 0) > 1})
+    if not links:
+        return items
+    marks = ", ".join(["%s"] * len(links))
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT id, link_id, location_id, shelf, quantity FROM items WHERE link_id IN ({marks}) ORDER BY id",
+                links,
+            )
+            rows = cur.fetchall()
+    places = {}
+    for row in rows:
+        places.setdefault(row["link_id"], []).append(row)
+    out, seen = [], set()
+    for item in items:
+        link = item.get("link_id")
+        if link in places and len(places[link]) > 1:
+            if link in seen:
+                continue
+            seen.add(link)
+            item = {**item, "places": places[link]}
+        out.append(item)
+    return out
+
+
 def list_group(link_id, user_id):
     if not link_id:
         return []
@@ -179,10 +207,10 @@ def check_low_stock(item):
     total = item.get("group_total")
     if total is None:
         total = item["quantity"]
-    is_low = total <= item["threshold"]
+    is_low = item["threshold"] is not None and total <= item["threshold"]
 
     if is_low and not item["low_stock_alert_sent"]:
-        send_discord_alert(f"HELLO! {item['name']} is running low ({total} left)")
+        send_discord_alert(f"{item['name']} is running low ({total} left)")
         set_alert_flag(item["id"], True, item.get("link_id"))
         grocery.add_low_stock_entry(_group_head(item))
 
@@ -447,7 +475,7 @@ def _read_item_form():
         return data, "Pick a category."
     if data["quantity"] is None or data["quantity"] < 0:
         return data, "Quantity must be 0 or more."
-    if data["threshold"] is None or data["threshold"] < 0:
+    if data["threshold"] is not None and data["threshold"] < 0:
         return data, "Alert level must be 0 or more."
     return data, None
 
@@ -495,7 +523,7 @@ def list_users():
 @bp.route("/")
 def dashboard():
     filters = _filters_from_args()
-    items = list_items(g.user["id"], **filters)
+    items = collapse_linked(list_items(g.user["id"], **filters))
     return render_template("dashboard.html", items=items, filters=filters,
                            categories=CATEGORIES, sorts=SORTS)
 
@@ -550,7 +578,7 @@ def restock_item(item_id):
 
 @bp.route("/add", methods=["GET", "POST"])
 def add_item():
-    data = {"category": request.args.get("category", "food"), "quantity": 1, "threshold": 0,
+    data = {"category": request.args.get("category", "food"), "quantity": 1, "threshold": None,
             "location_id": request.args.get("location_id", type=int),
             "shelf": request.args.get("shelf", type=int)}
     if request.method == "POST":

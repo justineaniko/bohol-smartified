@@ -34,7 +34,7 @@ def index():
     if tab in inventory.CATEGORIES:
         filters = inventory._filters_from_args()
         filters["category"] = tab
-        ctx.update(items=inventory.list_items(user_id, **filters), filters=filters,
+        ctx.update(items=inventory.collapse_linked(inventory.list_items(user_id, **filters)), filters=filters,
                    sorts=inventory.SORTS)
 
     elif tab == "books":
@@ -52,7 +52,7 @@ def index():
     else:
         ctx["sections"] = []
         for key in inventory.CATEGORIES:
-            found = inventory.list_items(user_id, category=key, q=q)
+            found = inventory.collapse_linked(inventory.list_items(user_id, category=key, q=q))
             ctx["sections"].append((key, tabs[key], "items", found))
         if has_feature("books"):
             ctx["sections"].append(("books", tabs["books"], "books", books.list_books(user_id, q=q)))

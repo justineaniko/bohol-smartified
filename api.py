@@ -63,7 +63,7 @@ def authenticate():
             cur.execute(
                 "SELECT users.id, users.username, users.display_name, users.session_version, users.is_admin "
                 "FROM api_keys JOIN users ON api_keys.user_id = users.id "
-                "WHERE api_keys.key_hash = %s AND users.is_admin = TRUE",
+                "WHERE api_keys.key_hash = %s",
                 (hash_key(key),),
             )
             user = cur.fetchone()
@@ -189,7 +189,7 @@ def add():
         return _say(_status(item))
     data = {
         "name": name[:1].upper() + name[1:100], "brand": None, "pack_size": None, "category": "other",
-        "quantity": amount, "threshold": 0, "restock_to": None,
+        "quantity": amount, "threshold": None, "restock_to": None,
         "location_id": place["id"] if place else None, "shelf": None, "expiry_date": None,
         "place_min": None, "assigned_to": None, "private": False,
     }
