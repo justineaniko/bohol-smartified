@@ -6,6 +6,7 @@ from flask import Flask, render_template
 
 load_dotenv()
 
+import api
 import auth
 import books
 import browse
@@ -29,6 +30,7 @@ if not app.config["SECRET_KEY"]:
     raise RuntimeError("SECRET_KEY is missing. Add it to your .env file (see .env.example).")
 
 app.register_blueprint(auth.bp)
+app.register_blueprint(api.bp)
 app.register_blueprint(inventory.bp)
 app.register_blueprint(browse.bp)
 app.register_blueprint(recipes.bp)

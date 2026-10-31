@@ -53,7 +53,7 @@ def load_logged_in_user():
 @bp.before_app_request
 def check_csrf():
     """Every form includes a secret token, so other websites can't submit forms as you."""
-    if request.method != "POST":
+    if request.method != "POST" or request.blueprint == "api":
         return
     sent = request.form.get("csrf_token", "")
     expected = session.get("csrf_token", "")
@@ -64,7 +64,7 @@ def check_csrf():
 @bp.before_app_request
 def require_login():
     """Default-deny: any page not in PUBLIC_ENDPOINTS needs a signed-in user."""
-    if g.user is not None or request.endpoint in PUBLIC_ENDPOINTS:
+    if g.user is not None or request.endpoint in PUBLIC_ENDPOINTS or request.blueprint == "api":
         return
     if request.endpoint is None:
         return
@@ -338,12 +338,24 @@ def account():
                     codes = _new_recovery_codes(cur, g.user["id"])
                     conn.commit()
                     return render_template("recovery_codes.html", codes=codes, first_time=False)
+
+                if action in ("siri_key", "siri_revoke") and g.user["is_admin"]:
+                    import api
+                    if action == "siri_revoke":
+                        api.revoke_key(g.user["id"])
+                        flash("Siri key turned off. Your shortcuts will stop working.", "success")
+                        return redirect(url_for("auth.account"))
+                    return render_template("siri_key.html", key=api.new_key(g.user["id"]))
         abort(400)
 
     with get_db() as conn:
         with conn.cursor() as cur:
             left = _codes_left(cur, g.user["id"])
-    return render_template("account.html", codes_left=left)
+    siri = None
+    if g.user["is_admin"]:
+        import api
+        siri = api.key_info(g.user["id"])
+    return render_template("account.html", codes_left=left, siri=siri)
 
 
 FEATURES = {"books": "Book tracker"}

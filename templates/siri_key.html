@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Siri key · Bohol House{% endblock %}
+
+{% block content %}
+  <a href="{{ url_for('auth.account') }}" class="back-link">← Account</a>
+  <hgroup class="top">
+    <h1>Your Siri key</h1>
+    <p>Copy it now. It won't be shown again.</p>
+  </hgroup>
+
+  <article class="siri-key">
+    <code id="siri-key">{{ key }}</code>
+    <button type="button" class="outline" id="copy-key">Copy key</button>
+    <small class="hint">Anyone with this key can change your inventory as you. Don't share it.</small>
+  </article>
+
+  <article>
+    <h3>Set up a shortcut on your iPhone</h3>
+    <p class="muted">Do this once per command. About 2 minutes each.</p>
+    <ol class="siri-steps">
+      <li>Open <strong>Shortcuts</strong> → tap <strong>+</strong>. Name it what you'll say, e.g. <em>Add to house</em>.</li>
+      <li>Add the action <strong>Dictate Text</strong>.</li>
+      <li>Add <strong>Get Contents of URL</strong>. Set the URL to one of the links below, tap <strong>Show More</strong>, and set:
+        <ul>
+          <li>Method: <strong>POST</strong></li>
+          <li>Headers → Add: <code>Authorization</code> = <code>Bearer</code> + a space + your key</li>
+          <li>Request Body: <strong>JSON</strong> → Add field: <code>text</code> (Text) = <strong>Dictated Text</strong></li>
+        </ul>
+      </li>
+      <li>Add <strong>Speak Text</strong> and set it to <strong>Contents of URL</strong>, so Siri reads out the result.</li>
+      <li>Say <em>“Hey Siri, Add to house”</em>, then say the item.</li>
+    </ol>
+  </article>
+
+  <article>
+    <h3>The three commands</h3>
+    <dl class="details-list siri-urls">
+      <dt>Add stock</dt>
+      <dd><code>{{ url_for('api.add', _external=True) }}</code><br><small class="muted">“2 Diet Coke in the fridge” → +2, or makes a new item if it doesn't exist.</small></dd>
+      <dt>Use</dt>
+      <dd><code>{{ url_for('api.use', _external=True) }}</code><br><small class="muted">“1 shampoo” or “used 2 eggs” → −1 / −2.</small></dd>
+      <dt>Grocery</dt>
+      <dd><code>{{ url_for('api.grocery_add', _external=True) }}</code><br><small class="muted">“eggs” → house list. “eggs to my list” → your private list.</small></dd>
+    </dl>
+    <small class="hint">Say the number first, then the item, then “in the …” for a place. Places match your location names, like “fridge” or “blue room cabinet”.</small>
+  </article>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('copy-key').addEventListener('click', async e => {
+    const text = document.getElementById('siri-key').textContent;
+    try { await navigator.clipboard.writeText(text); e.target.textContent = 'Copied'; }
+    catch (err) {
+      const range = document.createRange();
+      range.selectNodeContents(document.getElementById('siri-key'));
+      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      e.target.textContent = 'Selected, press copy';
+    }
+  });
+</script>
+{% endblock %}

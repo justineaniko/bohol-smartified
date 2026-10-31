@@ -689,3 +689,10 @@ a.location-card:hover { transform: translateY(-2px); }
 .also-keep form { margin-top: 0.75rem; }
 
 .chip-assigned { background: var(--amber-soft); color: var(--amber); }
+
+.siri-key { display: grid; gap: 0.75rem; }
+.siri-key code { display: block; padding: 0.75rem; overflow-wrap: anywhere; font-size: 0.95rem; }
+.siri-key button { width: auto; justify-self: start; margin: 0; }
+.siri-steps li { margin-bottom: 0.6rem; line-height: 1.55; }
+.siri-steps ul { margin-top: 0.4rem; }
+.siri-urls code { overflow-wrap: anywhere; }
