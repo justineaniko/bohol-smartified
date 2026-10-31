@@ -15,6 +15,7 @@ import grocery
 import hospital
 import medicine
 import recipes
+import voice
 
 app = Flask(__name__, static_folder="public", static_url_path="")
 
@@ -38,6 +39,7 @@ app.register_blueprint(books.bp)
 app.register_blueprint(grocery.bp)
 app.register_blueprint(medicine.bp)
 app.register_blueprint(hospital.bp)
+app.register_blueprint(voice.bp)
 
 @app.context_processor
 def inject_today():

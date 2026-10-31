@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m with context %}
+{% block title %}Quick add · Bohol House{% endblock %}
+
+{% block content %}
+  <header class="top">
+    <hgroup>
+      <h1>Quick add</h1>
+      <p>Tap the mic and say it. Like “two Diet Cokes in the fridge”.</p>
+    </hgroup>
+  </header>
+
+  <div class="voice-modes segmented" role="radiogroup" aria-label="What to do">
+    <label><input type="radio" name="mode" value="add" checked> Add stock</label>
+    <label><input type="radio" name="mode" value="use"> Used</label>
+    <label><input type="radio" name="mode" value="grocery"> Grocery list</label>
+  </div>
+
+  <div class="voice-stage">
+    <button type="button" id="mic" class="voice-mic" aria-label="Start talking">
+      <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5"/></svg>
+    </button>
+    <p id="mic-status" class="muted voice-status">Tap to talk</p>
+  </div>
+
+  <form id="voice-form" class="voice-form">
+    {{ m.csrf() }}
+    <input type="hidden" name="action" id="voice-action" value="add">
+    <input name="text" id="voice-text" maxlength="200" autocomplete="off" placeholder="Or type it here" aria-label="What to add">
+    <button type="submit">Send</button>
+  </form>
+
+  <ul id="voice-log" class="voice-log" aria-live="polite"></ul>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const RUN_URL = "{{ url_for('voice.run') }}";
+  const form = document.getElementById('voice-form');
+  const textBox = document.getElementById('voice-text');
+  const actionBox = document.getElementById('voice-action');
+  const mic = document.getElementById('mic');
+  const status = document.getElementById('mic-status');
+  const log = document.getElementById('voice-log');
+  const labels = { add: 'Add', use: 'Used', grocery: 'Grocery' };
+
+  document.querySelectorAll('input[name="mode"]').forEach(r => r.addEventListener('change', () => {
+    actionBox.value = r.value;
+    try { localStorage.setItem('voice-mode', r.value); } catch (e) {}
+  }));
+  try {
+    const saved = localStorage.getItem('voice-mode');
+    const radio = saved && document.querySelector(`input[name="mode"][value="${saved}"]`);
+    if (radio) { radio.checked = true; actionBox.value = saved; }
+  } catch (e) {}
+
+  function addLog(said, reply, ok) {
+    const li = document.createElement('li');
+    li.className = ok ? 'ok' : 'bad';
+    const top = document.createElement('div');
+    top.className = 'voice-said';
+    const tag = document.createElement('span');
+    tag.className = 'chip';
+    tag.textContent = labels[actionBox.value] || actionBox.value;
+    const words = document.createElement('span');
+    words.textContent = '“' + said + '”';
+    top.append(tag, words);
+    const answer = document.createElement('div');
+    answer.className = 'voice-reply';
+    answer.textContent = reply;
+    li.append(top, answer);
+    log.prepend(li);
+  }
+
+  async function send(text) {
+    text = text.trim();
+    if (!text) return;
+    const data = new FormData(form);
+    data.set('text', text);
+    status.textContent = 'Sending…';
+    try {
+      const r = await fetch(RUN_URL, { method: 'POST', body: data, credentials: 'same-origin' });
+      const reply = await r.text();
+      addLog(text, r.ok ? reply : (reply.length < 200 ? reply : 'Something went wrong. Try again.'), r.ok);
+      if (r.ok) textBox.value = '';
+    } catch (e) {
+      addLog(text, 'No connection. Try again.', false);
+    }
+    status.textContent = 'Tap to talk';
+  }
+
+  form.addEventListener('submit', e => { e.preventDefault(); send(textBox.value); });
+
+  const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Speech) {
+    mic.disabled = true;
+    status.textContent = 'Voice isn’t available in this browser. Use your keyboard’s mic in the box below.';
+  } else {
+    const rec = new Speech();
+    rec.lang = navigator.language || 'en-US';
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    let listening = false;
+    let finalText = '';
+
+    rec.onstart = () => { listening = true; finalText = ''; mic.classList.add('on'); status.textContent = 'Listening…'; };
+    rec.onresult = e => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      textBox.value = (finalText + interim).trim();
+    };
+    rec.onerror = e => {
+      status.textContent = e.error === 'not-allowed' ? 'Allow microphone access to use voice.' : 'Didn’t catch that. Tap to try again.';
+    };
+    rec.onend = () => {
+      listening = false;
+      mic.classList.remove('on');
+      if (finalText.trim()) send(finalText);
+      else if (status.textContent === 'Listening…') status.textContent = 'Tap to talk';
+    };
+    mic.addEventListener('click', () => { listening ? rec.stop() : rec.start(); });
+  }
+</script>
+{% endblock %}

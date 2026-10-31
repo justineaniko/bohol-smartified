@@ -179,14 +179,16 @@ def _status(item):
 
 @bp.route("/add", methods=["POST"])
 def add():
-    text = _spoken_text()
+    return _say(run_add(_spoken_text()))
+
+def run_add(text):
     amount, name, place = _parse(text)
     if not name:
-        return _say("I didn't catch what to add.")
+        return "I didn't catch what to add."
     item = _find_item(name, place)
     if item:
         item = inventory.change_quantity(item["id"], g.user["id"], amount)
-        return _say(_status(item))
+        return _status(item)
     data = {
         "name": name[:1].upper() + name[1:100], "brand": None, "pack_size": None, "category": "other",
         "quantity": amount, "threshold": None, "restock_to": None,
@@ -195,28 +197,32 @@ def add():
     }
     new_id = inventory.create_item(data, g.user["id"])
     item = inventory.get_item(new_id, g.user["id"])
-    return _say(f"Added {amount} {item['name']}{_where(item)} as a new item. You can set its category later.")
+    return f"Added {amount} {item['name']}{_where(item)} as a new item. You can set its category later."
 
 
 @bp.route("/use", methods=["POST"])
 def use():
-    text = _spoken_text()
+    return _say(run_use(_spoken_text()))
+
+def run_use(text):
     amount, name, place = _parse(text)
     item = _find_item(name, place)
     if item is None:
-        return _say(f"I couldn't find {name or 'that'} in the inventory.")
+        return f"I couldn't find {name or 'that'} in the inventory."
     item = inventory.change_quantity(item["id"], g.user["id"], -amount)
-    return _say(_status(item))
+    return _status(item)
 
 
 @bp.route("/grocery", methods=["POST"])
 def grocery_add():
-    text = _spoken_text()
+    return _say(run_grocery(_spoken_text()))
+
+def run_grocery(text):
     private = bool(re.search(r"\b(?:to|on)\s+my\s+list\b", text, re.I))
     text = LIST_WORDS.sub("", text)
     text = re.sub(r"^(?:please\s+)?(?:add|put|we need|i need|buy|get)\s+", "", text, flags=re.I).strip()
     if not text:
-        return _say("I didn't catch what to add to the list.")
+        return "I didn't catch what to add to the list."
     name = text[:1].upper() + text[1:100]
     grocery.create_entry(name, g.user["id"] if private else None)
-    return _say(f"Added {name} to {'your' if private else 'the house'} grocery list.")
+    return f"Added {name} to {'your' if private else 'the house'} grocery list."
