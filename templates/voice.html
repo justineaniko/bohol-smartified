@@ -92,9 +92,25 @@
   form.addEventListener('submit', e => { e.preventDefault(); send(textBox.value); });
 
   const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!Speech) {
+  const ua = navigator.userAgent;
+  const iosOtherBrowser = /iPhone|iPad/.test(ua) && /CriOS|FxiOS|EdgiOS|GSA/.test(ua);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const ERRORS = {
+    'not-allowed': 'Microphone is blocked. Allow it for this site in your browser settings, then reload.',
+    'service-not-allowed': 'Voice is turned off on this device. On iPhone: Settings → Siri → turn on Siri, or Settings → General → Keyboard → Enable Dictation.',
+    'audio-capture': 'No microphone found.',
+    'network': 'Voice needs an internet connection. Try again.',
+    'no-speech': 'Didn’t hear anything. Tap and talk right away.',
+    'aborted': 'Stopped. Tap to try again.',
+  };
+  if (iosOtherBrowser) {
     mic.disabled = true;
-    status.textContent = 'Voice isn’t available in this browser. Use your keyboard’s mic in the box below.';
+    status.textContent = 'On iPhone, voice only works in Safari. Open this page in Safari, or use your keyboard’s mic in the box below.';
+  } else if (!Speech) {
+    mic.disabled = true;
+    status.textContent = standalone
+      ? 'Voice doesn’t work from the home-screen app. Open the site in your browser, or use your keyboard’s mic below.'
+      : 'Voice isn’t available in this browser. Use your keyboard’s mic in the box below.';
   } else {
     const rec = new Speech();
     rec.lang = navigator.language || 'en-US';
@@ -113,7 +129,7 @@
       textBox.value = (finalText + interim).trim();
     };
     rec.onerror = e => {
-      status.textContent = e.error === 'not-allowed' ? 'Allow microphone access to use voice.' : 'Didn’t catch that. Tap to try again.';
+      status.textContent = ERRORS[e.error] || ('Voice error: ' + e.error + '. Tap to try again.');
     };
     rec.onend = () => {
       listening = false;
@@ -121,7 +137,11 @@
       if (finalText.trim()) send(finalText);
       else if (status.textContent === 'Listening…') status.textContent = 'Tap to talk';
     };
-    mic.addEventListener('click', () => { listening ? rec.stop() : rec.start(); });
+    mic.addEventListener('click', () => {
+      if (listening) { rec.stop(); return; }
+      try { rec.start(); }
+      catch (err) { status.textContent = 'Couldn’t start the mic (' + err.message + '). Reload and try again.'; }
+    });
   }
 </script>
 {% endblock %}
